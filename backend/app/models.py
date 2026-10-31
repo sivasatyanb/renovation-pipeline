@@ -256,3 +256,116 @@ class StructuringExtraction(BaseModel):
     price_estimate: PriceEstimate
     contractors: list[ExtractedContractor] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Call & Scheduling Models (/shared/schemas/call_request.schema.json & call_status.schema.json)
+# ---------------------------------------------------------------------------
+
+CallStatus = Literal["queued", "running", "completed", "failed", "stopped"]
+CallPhase = Literal["negotiating", "analyzing", "scheduling", "done"]
+SpeakerRole = Literal["customer_agent", "renovator_agent"]
+EndReason = Literal["agreement", "no_agreement", "stopped", "timeout", "error"]
+BookingStatus = Literal["created", "link_only", "failed"]
+
+
+class MeetingInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    customer_email: str = Field(..., min_length=1)
+    address: str = Field(..., min_length=1)
+    slots: list[str] = Field(default_factory=list)
+
+
+class CallRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(..., min_length=1)
+    contractor_id: str = Field(..., min_length=1)
+    meeting: MeetingInput
+
+
+class CreateCallResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    call_id: str
+
+
+class CallTurn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    index: int = Field(..., ge=0)
+    speaker: SpeakerRole
+    text: str
+    audio_url: str | None = None
+
+
+class CallOutcomeExtraction(BaseModel):
+    """LLM structured output for call outcome extraction (no field named 'title')."""
+
+    end_reason: EndReason
+    opening_price: float | None = None
+    final_price: float | None = None
+    currency: str | None = None
+    labour_included: bool | None = None
+    materials_included: bool | None = None
+    tax_included: bool | None = None
+    scope_confirmed: bool | None = None
+    agreed_slot: str | None = None
+    notes: str | None = None
+
+
+class CallOutcome(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    end_reason: EndReason
+    opening_price: float | None = None
+    final_price: float | None = None
+    savings: float | None = None
+    currency: str | None = None
+    labour_included: bool | None = None
+    materials_included: bool | None = None
+    tax_included: bool | None = None
+    scope_confirmed: bool | None = None
+    agreed_slot: str | None = None
+    notes: str | None = None
+
+
+class MatchDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    match: bool
+    reasons: list[str] = Field(default_factory=list)
+
+
+class BookingResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: BookingStatus
+    starts_at: str | None = None
+    location: str | None = None
+    event_url: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+
+
+class CallStatusResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: CallStatus
+    phase: CallPhase
+    simulated: bool = True
+    is_replay: bool = False
+    turns: list[CallTurn] = Field(default_factory=list)
+    outcome: CallOutcome | None = None
+    match: MatchDecision | None = None
+    booking: BookingResult | None = None
+    warnings: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class AgentTurnOutput(BaseModel):
+    """Structured output returned by TALK_MODEL for each speaker turn."""
+
+    text: str
+    end_call: bool = False
+    end_reason: str | None = None
