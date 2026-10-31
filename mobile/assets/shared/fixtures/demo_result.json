@@ -1,0 +1,249 @@
+{
+  "project_id": "demo-001",
+  "is_demo": true,
+  "price_estimate": {
+    "low": 6200,
+    "high": 9400,
+    "currency": "EUR",
+    "line_items": [
+      {
+        "label": "Walls and ceiling preparation & matte painting (38 m2)",
+        "low": 2100,
+        "high": 3200
+      },
+      {
+        "label": "Solid/engineered oak parquet supply & installation (14 m2)",
+        "low": 3400,
+        "high": 5100
+      },
+      {
+        "label": "Skirting boards, waste removal & site protection",
+        "low": 700,
+        "high": 1100
+      }
+    ],
+    "source_urls": [
+      "https://example.invalid/demo-pricing-guide/paris-painting-m2",
+      "https://example.invalid/demo-pricing-guide/paris-oak-parquet"
+    ]
+  },
+  "contractors": [
+    {
+      "id": "demo-contractor-1",
+      "rank": 1,
+      "name": "Atelier Kanso Renovations (Fictional Demo Co.)",
+      "phone_e164": "+33199000001",
+      "phone_verified": true,
+      "phone_source_url": "https://example.invalid/atelier-kanso-fictional/contact",
+      "website": "https://example.invalid/atelier-kanso-fictional",
+      "address": "14 Rue de l'Exemple Fictif, 75011 Paris, France",
+      "trades": ["painting", "flooring", "interior_finishing"],
+      "rating": 4.9,
+      "review_count": 142,
+      "certifications": [
+        {
+          "name": "Qualibat RGE (Fictional Demo Cert #0001)",
+          "source_url": "https://example.invalid/qualibat-demo/atelier-kanso"
+        }
+      ],
+      "insurance": "Garantie Décennale & RC Pro verified (Fictional Demo Policy)",
+      "portfolio_urls": [
+        "https://example.invalid/atelier-kanso-fictional/portfolio/japandi-bedroom"
+      ],
+      "expected_price": {
+        "low": 6800,
+        "high": 8500,
+        "currency": "EUR"
+      },
+      "availability": "Available in 4-6 weeks",
+      "score": 89,
+      "subscores": {
+        "price": 82,
+        "reputation": 95,
+        "fit": 94,
+        "availability": 78
+      },
+      "why_recommended": "Strong match for a balanced partial Japandi bedroom renovation within your 5k-15k EUR budget, with verified Décennale insurance and dedicated oak flooring and low-VOC paint experience.",
+      "red_flags": [],
+      "source_urls": [
+        "https://example.invalid/atelier-kanso-fictional",
+        "https://example.invalid/reviews-demo/atelier-kanso"
+      ],
+      "call_brief": {
+        "target_price": 7100,
+        "max_price": 8200,
+        "leverage_points": [
+          "Small 14 m2 single-room footprint allows combining painting and flooring crews in one 5-day slot.",
+          "Client has flexible start window within 1-3 months to fill an off-peak schedule gap."
+        ],
+        "questions_to_ask": [
+          "Does the quote include acoustic underlayment beneath the 14 m2 oak parquet?",
+          "Can you provide your current attestation d'assurance décennale before site visit?"
+        ]
+      }
+    },
+    {
+      "id": "demo-contractor-2",
+      "rank": 2,
+      "name": "Lutetia Parquet & Peinture SARL (Fictional Demo Co.)",
+      "phone_e164": "+33199000002",
+      "phone_verified": true,
+      "phone_source_url": "https://example.invalid/lutetia-parquet-fictional/mentions-legales",
+      "website": "https://example.invalid/lutetia-parquet-fictional",
+      "address": "88 Avenue Fictive, 75015 Paris, France",
+      "trades": ["painting", "flooring"],
+      "rating": 4.7,
+      "review_count": 98,
+      "certifications": [
+        {
+          "name": "Artisan Certifié Chambre de Métiers (Fictional Demo)",
+          "source_url": "https://example.invalid/cma-demo/lutetia-parquet"
+        }
+      ],
+      "insurance": "Garantie Décennale AXA Demo #99902",
+      "portfolio_urls": [
+        "https://example.invalid/lutetia-parquet-fictional/galerie"
+      ],
+      "expected_price": {
+        "low": 6100,
+        "high": 7600,
+        "currency": "EUR"
+      },
+      "availability": "Available in 3 weeks",
+      "score": 85,
+      "subscores": {
+        "price": 90,
+        "reputation": 86,
+        "fit": 80,
+        "availability": 85
+      },
+      "why_recommended": "Competitive pricing at the lower end of the 5k-15k EUR range and fast 3-week availability across both painting and oak flooring trades.",
+      "red_flags": [
+        "Portfolio shows mostly classic Haussmannian projects rather than minimalist Japandi rooms."
+      ],
+      "source_urls": [
+        "https://example.invalid/lutetia-parquet-fictional",
+        "https://example.invalid/reviews-demo/lutetia-parquet"
+      ],
+      "call_brief": {
+        "target_price": 6300,
+        "max_price": 7400,
+        "leverage_points": [
+          "Standardized 38 m2 wall/ceiling area and 14 m2 rectangular floor layout.",
+          "Competitor quotes in the 6,800-7,500 EUR range include natural matte finish."
+        ],
+        "questions_to_ask": [
+          "Do you offer brushed matte invisible varnish for a natural Japandi oak finish?",
+          "Is one project manager assigned for both the painter and floor layer?"
+        ]
+      }
+    },
+    {
+      "id": "demo-contractor-3",
+      "rank": 3,
+      "name": "Maison Nordique Finitions (Fictional Demo Co.)",
+      "phone_e164": "+33199000003",
+      "phone_verified": true,
+      "phone_source_url": "https://example.invalid/maison-nordique-fictional/contact",
+      "website": "https://example.invalid/maison-nordique-fictional",
+      "address": "22 Passage Imaginaire, 75003 Paris, France",
+      "trades": ["painting", "flooring", "joinery"],
+      "rating": 4.8,
+      "review_count": 64,
+      "certifications": [
+        {
+          "name": "Qualibat 6222 Sols Bois (Fictional Demo)",
+          "source_url": "https://example.invalid/qualibat-demo/maison-nordique"
+        }
+      ],
+      "insurance": "Garantie Décennale & RC Pro verified (Fictional Demo)",
+      "portfolio_urls": [
+        "https://example.invalid/maison-nordique-fictional/projects/minimal-oak"
+      ],
+      "expected_price": {
+        "low": 7800,
+        "high": 10200,
+        "currency": "EUR"
+      },
+      "availability": "Available in 6-8 weeks",
+      "score": 81,
+      "subscores": {
+        "price": 70,
+        "reputation": 88,
+        "fit": 92,
+        "availability": 70
+      },
+      "why_recommended": "High aesthetic fit with documented minimalist timber and lime-wash paint projects, still comfortably within your 5k-15k EUR budget.",
+      "red_flags": [
+        "2 recent reviews mention 1-week scheduling delays on start dates."
+      ],
+      "source_urls": [
+        "https://example.invalid/maison-nordique-fictional",
+        "https://example.invalid/reviews-demo/maison-nordique"
+      ],
+      "call_brief": {
+        "target_price": 7600,
+        "max_price": 8900,
+        "leverage_points": [
+          "No structural, electrical, or plumbing changes needed—purely surface and floor work."
+        ],
+        "questions_to_ask": [
+          "Can you commit to a firm start date in writing within the next 8 weeks?",
+          "Are skirting board replacements included in the m2 flooring rate?"
+        ]
+      }
+    },
+    {
+      "id": "demo-contractor-4",
+      "rank": 4,
+      "name": "Rénov'Seine Express (Fictional Demo Co.)",
+      "phone_e164": "+33199000004",
+      "phone_verified": false,
+      "phone_source_url": "https://example.invalid/directory-demo/renov-seine-express",
+      "website": null,
+      "address": "5 Boulevard Fictif, 92100 Boulogne-Billancourt, France",
+      "trades": ["painting", "flooring"],
+      "rating": 4.4,
+      "review_count": 41,
+      "certifications": [],
+      "insurance": "Listed on directory profile; certificate URL not found",
+      "portfolio_urls": [],
+      "expected_price": {
+        "low": 5600,
+        "high": 6900,
+        "currency": "EUR"
+      },
+      "availability": "Available in 2-4 weeks",
+      "score": 73,
+      "subscores": {
+        "price": 94,
+        "reputation": 68,
+        "fit": 58,
+        "availability": 90
+      },
+      "why_recommended": "Budget-friendly option covering both painting and parquet installation with rapid availability, ranked lower because phone number could not be verified on an official company website.",
+      "red_flags": [
+        "No dedicated company website; phone listed only on third-party directory.",
+        "No public Japandi style portfolio links found."
+      ],
+      "source_urls": [
+        "https://example.invalid/directory-demo/renov-seine-express"
+      ],
+      "call_brief": {
+        "target_price": 5500,
+        "max_price": 6400,
+        "leverage_points": [
+          "Competing contractors provide online portfolios and published Décennale certificates."
+        ],
+        "questions_to_ask": [
+          "Can you email photos of recent oak parquet installations and your SIREN/Décennale documents before quoting?",
+          "Do you supply the oak parquet or install client-supplied materials?"
+        ]
+      }
+    }
+  ],
+  "warnings": [
+    "Demo data: All companies, phone numbers, and URLs shown here are fictional fixtures from /shared/fixtures/demo_result.json.",
+    "Only 4 qualifying fictional contractors returned in demo fixture to demonstrate < 5 contractor warning handling."
+  ]
+}
