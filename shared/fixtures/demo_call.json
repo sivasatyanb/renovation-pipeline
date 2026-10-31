@@ -1,0 +1,74 @@
+{
+  "status": "completed",
+  "phase": "done",
+  "simulated": true,
+  "is_replay": true,
+  "turns": [
+    {
+      "index": 0,
+      "speaker": "customer_agent",
+      "text": "Hello, I am an AI assistant calling for a customer in Paris about 38 m2 painting and 14 m2 oak flooring.",
+      "audio_url": null
+    },
+    {
+      "index": 1,
+      "speaker": "renovator_agent",
+      "text": "Hello! Yes, we handle Japandi painting and oak parquet in Paris. For that scope our initial estimate is 9200 EUR.",
+      "audio_url": null
+    },
+    {
+      "index": 2,
+      "speaker": "customer_agent",
+      "text": "Since it is one 14 m2 room with flexible timing, can we reach 7100 EUR including labour, materials, and tax?",
+      "audio_url": null
+    },
+    {
+      "index": 3,
+      "speaker": "renovator_agent",
+      "text": "With acoustic underlayment, labour, materials, and VAT included, the best non-binding estimate I can offer is 7650 EUR.",
+      "audio_url": null
+    },
+    {
+      "index": 4,
+      "speaker": "customer_agent",
+      "text": "7650 EUR all-inclusive works as a non-binding estimate. Are you available for a site visit at 2026-11-02T14:00:00+01:00?",
+      "audio_url": null
+    },
+    {
+      "index": 5,
+      "speaker": "renovator_agent",
+      "text": "Yes, 2026-11-02T14:00:00+01:00 works for our in-person visit. Looking forward to seeing the room.",
+      "audio_url": null
+    }
+  ],
+  "outcome": {
+    "end_reason": "agreement",
+    "opening_price": 9200,
+    "final_price": 7650,
+    "savings": 1550,
+    "currency": "EUR",
+    "labour_included": true,
+    "materials_included": true,
+    "tax_included": true,
+    "scope_confirmed": true,
+    "agreed_slot": "2026-11-02T14:00:00+01:00",
+    "notes": "Non-binding estimate of 7650 EUR includes labour, materials, acoustic underlayment, and tax for 38 m2 painting and 14 m2 oak parquet."
+  },
+  "match": {
+    "match": true,
+    "reasons": []
+  },
+  "booking": {
+    "status": "link_only",
+    "starts_at": "2026-11-02T14:00:00+01:00",
+    "location": "12 Rue de Rivoli, 75004 Paris, France",
+    "event_url": "https://calendar.google.com/calendar/render?action=TEMPLATE&text=In-person+renovation+meeting%3A+Atelier+Kanso+Renovations+%28Fictional+Demo+Co.%29&dates=20261102T130000Z%2F20261102T134500Z&location=12+Rue+de+Rivoli%2C+75004+Paris%2C+France",
+    "warnings": [
+      "Replay mode: Google Calendar token not configured; generated calendar template link."
+    ]
+  },
+  "warnings": [
+    "Replay: Loaded scripted transcript from shared/fixtures/demo_call.json."
+  ],
+  "error": null
+}

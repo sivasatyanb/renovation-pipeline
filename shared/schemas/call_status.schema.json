@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallStatusResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "phase",
+    "simulated",
+    "turns",
+    "outcome",
+    "match",
+    "booking",
+    "warnings",
+    "error"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["queued", "running", "completed", "failed", "stopped"]
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["negotiating", "analyzing", "scheduling", "done"]
+    },
+    "simulated": {
+      "type": "boolean"
+    },
+    "is_replay": {
+      "type": "boolean"
+    },
+    "turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "speaker", "text", "audio_url"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "speaker": {
+            "type": "string",
+            "enum": ["customer_agent", "renovator_agent"]
+          },
+          "text": {
+            "type": "string"
+          },
+          "audio_url": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "outcome": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "end_reason",
+        "opening_price",
+        "final_price",
+        "savings",
+        "currency",
+        "labour_included",
+        "materials_included",
+        "tax_included",
+        "scope_confirmed",
+        "agreed_slot",
+        "notes"
+      ],
+      "properties": {
+        "end_reason": {
+          "type": "string",
+          "enum": ["agreement", "no_agreement", "stopped", "timeout", "error"]
+        },
+        "opening_price": {
+          "type": ["number", "null"]
+        },
+        "final_price": {
+          "type": ["number", "null"]
+        },
+        "savings": {
+          "type": ["number", "null"]
+        },
+        "currency": {
+          "type": ["string", "null"]
+        },
+        "labour_included": {
+          "type": ["boolean", "null"]
+        },
+        "materials_included": {
+          "type": ["boolean", "null"]
+        },
+        "tax_included": {
+          "type": ["boolean", "null"]
+        },
+        "scope_confirmed": {
+          "type": ["boolean", "null"]
+        },
+        "agreed_slot": {
+          "type": ["string", "null"]
+        },
+        "notes": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "match": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["match", "reasons"],
+      "properties": {
+        "match": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "booking": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["status", "starts_at", "location", "event_url", "warnings"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["created", "link_only", "failed"]
+        },
+        "starts_at": {
+          "type": ["string", "null"]
+        },
+        "location": {
+          "type": ["string", "null"]
+        },
+        "event_url": {
+          "type": ["string", "null"]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "error": {
+      "type": ["string", "null"]
+    }
+  }
+}

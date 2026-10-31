@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "contractor_id", "meeting"],
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contractor_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "meeting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["customer_email", "address", "slots"],
+      "properties": {
+        "customer_email": {
+          "type": "string",
+          "minLength": 1
+        },
+        "address": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -3,6 +3,10 @@
 *.env
 !*.env.example
 backend/.env
+credentials.json
+token.json
+**/credentials.json
+**/token.json
 
 # Python
 __pycache__/
