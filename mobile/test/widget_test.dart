@@ -1,3 +1,9 @@
+import 'dart:typed_data';
+import 'package:renovation_mobile/screens/studio_screen.dart';
+import 'package:renovation_mobile/services/photo_picker_service.dart';
+import 'package:renovation_mobile/services/render_api_client.dart';
+import 'package:renovation_mobile/services/voice_input_service.dart';
+import 'package:renovation_mobile/widgets/before_after_slider.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -180,6 +186,169 @@ class MockHttpClient extends http.BaseClient {
   }
 }
 
+
+
+
+final defaultRenderResult = RenderResult(
+  beforeUrl: '/static/renders/before_fake.jpg',
+  afterUrl: '/static/renders/after_fake.jpg',
+  renovationPrompt: 'Keep the window and room layout. Paint the walls and ceiling warm off-white and lay oak parquet for a Japandi bedroom.',
+  voiceConfirmation: 'I have redesigned your bedroom with warm off-white walls and oak parquet.',
+  audioUrl: '/static/audio/confirmation_fake.mp3',
+  modelUsed: 'Nano Banana v1',
+  latencyMs: 1850,
+  room: RoomInfo(type: 'bedroom', surfaceM2: 14, confidence: 'high'),
+  style: 'Japandi',
+  workItems: [
+    WorkItem(trade: 'painting', description: 'Warm off-white walls and ceiling', quantity: 45, unit: 'm2'),
+    WorkItem(trade: 'flooring', description: 'Oak parquet flooring', quantity: 14, unit: 'm2'),
+  ],
+);
+
+class FakeRenderApiClient implements RenderApiClient {
+  @override
+  final String baseUrl;
+  int createRenderCount = 0;
+  int getStatusCount = 0;
+  RenderRequest? lastRequest;
+  bool shouldFailCreate;
+  bool shouldFailPoll;
+  final List<RenderStatusResponse> statusSequence;
+  RenderResult? resultToReturn;
+
+  FakeRenderApiClient({
+    this.baseUrl = 'http://test-server:8000',
+    this.shouldFailCreate = false,
+    this.shouldFailPoll = false,
+    this.statusSequence = const [],
+    this.resultToReturn,
+  });
+
+  @override
+  Future<String> createRender(RenderRequest request) async {
+    createRenderCount++;
+    lastRequest = request;
+    if (shouldFailCreate) {
+      throw Exception('Create render failed: Server error');
+    }
+    return 'fake-render-001';
+  }
+
+  @override
+  Future<RenderStatusResponse> getRenderStatus(String renderId) async {
+    getStatusCount++;
+    if (shouldFailPoll) {
+      return RenderStatusResponse(
+        status: 'failed',
+        phase: 'rendering',
+        error: 'Diffusion model error',
+      );
+    }
+    if (statusSequence.isNotEmpty) {
+      final idx = (getStatusCount - 1) < statusSequence.length
+          ? (getStatusCount - 1)
+          : statusSequence.length - 1;
+      return statusSequence[idx];
+    }
+    return RenderStatusResponse(
+      status: 'completed',
+      phase: 'done',
+      isReplay: true,
+      result: resultToReturn ?? defaultRenderResult,
+    );
+  }
+
+  @override
+  String resolveUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '$baseUrl$path';
+  }
+}
+
+class FakeVoiceInputService extends VoiceInputService {
+  final bool available;
+  final String? simulatedSpeechResult;
+  int startListeningCount = 0;
+  int stopListeningCount = 0;
+
+  FakeVoiceInputService({
+    this.available = true,
+    this.simulatedSpeechResult,
+  });
+
+  @override
+  bool get isAvailable => available;
+
+  @override
+  Future<bool> initialize() async => available;
+
+  @override
+  Future<bool> startListening({
+    required void Function(String text) onResult,
+    void Function(String finalTranscript)? onDone,
+  }) async {
+    startListeningCount++;
+    if (!available) return false;
+    if (simulatedSpeechResult != null) {
+      onResult(simulatedSpeechResult!);
+      onDone?.call(simulatedSpeechResult!);
+    }
+    return true;
+  }
+
+  @override
+  Future<void> stopListening({
+    void Function(String transcript)? onStopped,
+  }) async {
+    stopListeningCount++;
+    if (simulatedSpeechResult != null) {
+      onStopped?.call(simulatedSpeechResult!);
+    }
+  }
+}
+
+class FakePhotoPickerService extends PhotoPickerService {
+  final PickedRoomPhoto? photoToReturn;
+  final bool shouldThrow;
+
+  FakePhotoPickerService({
+    this.photoToReturn,
+    this.shouldThrow = false,
+  });
+
+  @override
+  Future<PickedRoomPhoto> loadSampleRoom() async {
+    if (shouldThrow) throw Exception('Load sample room failed');
+    if (photoToReturn != null) return photoToReturn!;
+    return PickedRoomPhoto(
+      bytes: Uint8List.fromList([1, 2, 3, 4]),
+      mimeType: 'image/jpeg',
+      label: 'Sample Japandi Room',
+    );
+  }
+
+  @override
+  Future<PickedRoomPhoto?> pickFromGallery() async {
+    return photoToReturn ??
+        PickedRoomPhoto(
+          bytes: Uint8List.fromList([5, 6, 7, 8]),
+          mimeType: 'image/png',
+          label: 'Gallery Photo',
+        );
+  }
+
+  @override
+  Future<PickedRoomPhoto?> pickFromCamera() async {
+    return photoToReturn ??
+        PickedRoomPhoto(
+          bytes: Uint8List.fromList([9, 10, 11, 12]),
+          mimeType: 'image/jpeg',
+          label: 'Camera Photo',
+        );
+  }
+}
+
 void main() {
   late Project demoProject;
   late QuizConfig quizConfig;
@@ -315,7 +484,19 @@ void main() {
       // Tap Start button
       final startButton = find.byKey(const Key('start_quiz_button'));
       expect(startButton, findsOneWidget);
+      await tester.ensureVisible(startButton);
+      await tester.pumpAndSettle();
       await tester.tap(startButton);
+      await tester.pumpAndSettle();
+
+      // Lands on StudioScreen
+      expect(find.byKey(const Key('skip_design_button')), findsOneWidget);
+
+      // Tap skip_design_button to advance to QuizScreen
+      final skipButton = find.byKey(const Key('skip_design_button'));
+      await tester.ensureVisible(skipButton);
+      await tester.pumpAndSettle();
+      await tester.tap(skipButton);
       await tester.pumpAndSettle();
 
       // Verify Quiz Screen Question 1 is visible
@@ -876,4 +1057,362 @@ void main() {
       },
     );
   });
+
+  
+  
+  
+  
+  group('AuraSpace Studio Flow Tests', () {
+    testWidgets(
+      '1. Studio loads sample room, fills "Use sample brief", taps "Renovate", displays phase progress (planning -> rendering -> narrating -> done), and renders BeforeAfterSlider (35%), Replay badge, latency chip, and spoken confirmation',
+      (WidgetTester tester) async {
+        final fakeRenderApi = FakeRenderApiClient(
+          statusSequence: [
+            RenderStatusResponse(status: 'running', phase: 'planning'),
+            RenderStatusResponse(status: 'running', phase: 'rendering'),
+            RenderStatusResponse(status: 'running', phase: 'narrating'),
+            RenderStatusResponse(
+              status: 'completed',
+              phase: 'done',
+              isReplay: true,
+              result: defaultRenderResult,
+            ),
+          ],
+        );
+        final fakePhotoPicker = FakePhotoPickerService();
+        final fakeAudio = FakeCallAudioPlayer();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StudioScreen(
+              city: 'Paris',
+              country: 'France',
+              renderApiClient: fakeRenderApi,
+              photoPickerService: fakePhotoPicker,
+              audioPlayerFactory: () => fakeAudio,
+              pollInterval: const Duration(milliseconds: 50),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Load sample room
+        final loadSampleBtn = find.byKey(const Key('use_sample_room_button'));
+        await tester.ensureVisible(loadSampleBtn);
+        await tester.tap(loadSampleBtn);
+        await tester.pumpAndSettle();
+        expect(find.text('Source: Sample Japandi Room'), findsOneWidget);
+
+        // 2. Fill sample brief
+        final sampleBriefBtn = find.byKey(const Key('use_sample_brief_button'));
+        await tester.ensureVisible(sampleBriefBtn);
+        await tester.tap(sampleBriefBtn);
+        await tester.pumpAndSettle();
+        expect(find.text(kSampleBrief), findsOneWidget);
+
+        // 3. Tap Renovate
+        final renovateBtn = find.byKey(const Key('renovate_button'));
+        await tester.ensureVisible(renovateBtn);
+        await tester.tap(renovateBtn);
+        await tester.pump();
+
+        // Planning phase
+        expect(find.byKey(const Key('render_phase_indicator')), findsOneWidget);
+        expect(find.text('Planning renovation & extracting scope...'), findsOneWidget);
+
+        // Rendering phase
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(find.text('Generating Nano Banana after render...'), findsOneWidget);
+
+        // Narrating phase
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(find.text('Synthesizing voice confirmation...'), findsOneWidget);
+
+        // Done / Completed
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.pumpAndSettle();
+
+        // Verify BeforeAfterSlider
+        expect(find.byType(BeforeAfterSlider), findsOneWidget);
+        expect(find.byKey(const Key('before_after_slider')), findsOneWidget);
+        expect(find.text('Before'), findsOneWidget);
+        expect(find.text('After'), findsOneWidget);
+
+        // Drag handle to 35%
+        final dragHandle = find.byKey(const Key('slider_drag_handle'));
+        expect(dragHandle, findsOneWidget);
+        await tester.ensureVisible(dragHandle);
+        await tester.drag(dragHandle, const Offset(-40, 0));
+        await tester.pumpAndSettle();
+
+        // Verify Replay badge (is_replay: true)
+        expect(find.byKey(const Key('render_replay_badge')), findsOneWidget);
+        expect(find.text('Replay'), findsOneWidget);
+
+        // Verify latency chip (1850ms -> 1.9s)
+        expect(find.byKey(const Key('render_latency_chip')), findsOneWidget);
+        expect(find.text('1.9s'), findsOneWidget);
+
+        // Verify spoken confirmation text
+        expect(find.byKey(const Key('voice_confirmation_text')), findsOneWidget);
+        expect(
+          find.text('"${defaultRenderResult.voiceConfirmation}"'),
+          findsOneWidget,
+        );
+
+        // Verify audio played via resolved URL
+        expect(fakeAudio.playedUrls, contains('http://test-server:8000/static/audio/confirmation_fake.mp3'));
+      },
+    );
+
+    testWidgets(
+      '2. Tapping "Find renovators for this design" passes Studio\'s Project to QuizScreen and submits that project to POST /research',
+      (WidgetTester tester) async {
+        final fakeRenderApi = FakeRenderApiClient(resultToReturn: defaultRenderResult);
+        final fakeResearchApi = FakeResearchApiClient(result: demoResult);
+        final fakePhotoPicker = FakePhotoPickerService();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StudioScreen(
+              city: 'Marseille',
+              country: 'France',
+              quizConfig: quizConfig,
+              apiClient: fakeResearchApi,
+              renderApiClient: fakeRenderApi,
+              photoPickerService: fakePhotoPicker,
+              pollInterval: const Duration(milliseconds: 50),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Load room and brief, then renovate
+        final loadSampleBtn = find.byKey(const Key('use_sample_room_button'));
+        await tester.ensureVisible(loadSampleBtn);
+        await tester.tap(loadSampleBtn);
+        await tester.pumpAndSettle();
+
+        final sampleBriefBtn = find.byKey(const Key('use_sample_brief_button'));
+        await tester.ensureVisible(sampleBriefBtn);
+        await tester.tap(sampleBriefBtn);
+        await tester.pumpAndSettle();
+
+        final renovateBtn = find.byKey(const Key('renovate_button'));
+        await tester.ensureVisible(renovateBtn);
+        await tester.tap(renovateBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.pumpAndSettle();
+
+        // Primary CTA: Find renovators for this design
+        final findRenovatorsBtn = find.byKey(const Key('find_renovators_button'));
+        expect(findRenovatorsBtn, findsOneWidget);
+        await tester.ensureVisible(findRenovatorsBtn);
+        await tester.tap(findRenovatorsBtn);
+        await tester.pumpAndSettle();
+
+        // Lands on QuizScreen
+        expect(find.text('Question 1 of 5'), findsOneWidget);
+
+        // Step through all 5 questions
+        await tester.tap(find.byKey(const Key('option_5k_15k')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('option_partial')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('option_one_to_three_months')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('option_balanced')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('option_licensed_insured')));
+        await tester.pumpAndSettle();
+        final submitBtn = find.byKey(const Key('submit_quiz_button'));
+        await tester.ensureVisible(submitBtn);
+        await tester.tap(submitBtn);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // Verify POST /research was called with Studio project
+        expect(fakeResearchApi.startCallCount, 1);
+        final submittedProject = fakeResearchApi.lastProject!;
+        expect(submittedProject.client.city, 'Marseille');
+        expect(submittedProject.room.type, 'bedroom');
+        expect(submittedProject.room.surfaceM2, 14);
+        expect(submittedProject.style, 'Japandi');
+        expect(submittedProject.renderUrls, contains('http://test-server:8000/static/renders/after_fake.jpg'));
+
+        // Verify ResultsScreen shows renovation design preview
+        expect(find.byKey(const Key('results_render_preview')), findsOneWidget);
+        expect(find.text('Your Renovation Design'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '3. Tapping "Skip design and use sample project" proceeds to QuizScreen with sample project',
+      (WidgetTester tester) async {
+        final fakeResearchApi = FakeResearchApiClient(result: demoResult);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StudioScreen(
+              city: 'Bordeaux',
+              initialProject: demoProject,
+              quizConfig: quizConfig,
+              apiClient: fakeResearchApi,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap Skip design button
+        final skipBtn = find.byKey(const Key('skip_design_button'));
+        expect(skipBtn, findsOneWidget);
+        await tester.ensureVisible(skipBtn);
+        await tester.tap(skipBtn);
+        await tester.pumpAndSettle();
+
+        // Lands on QuizScreen
+        expect(find.text('Question 1 of 5'), findsOneWidget);
+        expect(
+          find.text('What is your total budget, including labour, materials and tax?'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      '4. When mic is unavailable, tapping mic shows Key(\'mic_unavailable_message\') and does not insert fake transcript',
+      (WidgetTester tester) async {
+        final fakeVoice = FakeVoiceInputService(available: false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StudioScreen(
+              voiceInputService: fakeVoice,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify mic unavailable warning is not visible initially
+        expect(find.byKey(const Key('mic_unavailable_message')), findsNothing);
+
+        // Tap mic dictation button
+        final micBtn = find.byKey(const Key('voice_dictation_button'));
+        expect(micBtn, findsOneWidget);
+        await tester.ensureVisible(micBtn);
+        await tester.tap(micBtn);
+        await tester.pumpAndSettle();
+
+        // Warning message should now appear
+        expect(find.byKey(const Key('mic_unavailable_message')), findsOneWidget);
+        expect(
+          find.text(
+            'Microphone dictation is unavailable on this device or browser. Please type your brief or use the sample brief.',
+          ),
+          findsOneWidget,
+        );
+
+        // Verify brief field remains empty and no fake transcript was inserted
+        final briefField = tester.widget<TextField>(find.byKey(const Key('brief_input_field')));
+        expect(briefField.controller?.text, isEmpty);
+      },
+    );
+
+    testWidgets(
+      '5. When POST /renders or GET /renders/{id} fails, StudioScreen shows error banner and Retry button',
+      (WidgetTester tester) async {
+        final fakeRenderApi = FakeRenderApiClient(shouldFailCreate: true);
+        final fakePhotoPicker = FakePhotoPickerService();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StudioScreen(
+              renderApiClient: fakeRenderApi,
+              photoPickerService: fakePhotoPicker,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Prepare inputs
+        final loadSampleBtn = find.byKey(const Key('use_sample_room_button'));
+        await tester.ensureVisible(loadSampleBtn);
+        await tester.tap(loadSampleBtn);
+        await tester.pumpAndSettle();
+
+        final sampleBriefBtn = find.byKey(const Key('use_sample_brief_button'));
+        await tester.ensureVisible(sampleBriefBtn);
+        await tester.tap(sampleBriefBtn);
+        await tester.pumpAndSettle();
+
+        // Tap Renovate -> triggers failure
+        final renovateBtn = find.byKey(const Key('renovate_button'));
+        await tester.ensureVisible(renovateBtn);
+        await tester.tap(renovateBtn);
+        await tester.pumpAndSettle();
+
+        // Verify error banner and retry button
+        expect(find.byKey(const Key('render_error_banner')), findsOneWidget);
+        expect(find.text('Renovation render error'), findsOneWidget);
+        expect(find.byKey(const Key('retry_render_button')), findsOneWidget);
+
+        // Now fix failure and test Retry
+        fakeRenderApi.shouldFailCreate = false;
+        final retryBtn = find.byKey(const Key('retry_render_button'));
+        await tester.ensureVisible(retryBtn);
+        await tester.tap(retryBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.pumpAndSettle();
+
+        // Error banner should be gone and completion shown
+        expect(find.byKey(const Key('render_error_banner')), findsNothing);
+        expect(find.byType(BeforeAfterSlider), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '6. BeforeAfterSlider renders split before/after with custom initial percent (35%)',
+      (WidgetTester tester) async {
+        double currentPercent = 0.0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BeforeAfterSlider(
+                beforeBytes: Uint8List.fromList([1, 2, 3]),
+                afterImageUrl: 'http://test-server:8000/after.jpg',
+                initialPercent: 35.0,
+                onPositionChanged: (p) => currentPercent = p,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('before_after_slider')), findsOneWidget);
+        expect(find.text('Before'), findsOneWidget);
+        expect(find.text('After'), findsOneWidget);
+
+        final handle = find.byKey(const Key('slider_drag_handle'));
+        expect(handle, findsOneWidget);
+        await tester.drag(handle, const Offset(50, 0));
+        await tester.pumpAndSettle();
+        expect(currentPercent, greaterThan(35.0));
+      },
+    );
+  });
+
 }
