@@ -1,19 +1,25 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/call_handler.dart';
 import 'research_screen.dart';
 
 class QuizScreen extends StatefulWidget {
-  final Project project;
-  final QuizConfig quizConfig;
+  final Project? project;
+  final Project? initialProject;
+  final QuizConfig? quizConfig;
+  final String? afterRenderUrl;
   final ResearchApiClient? apiClient;
   final OnCallPressedCallback? onCallPressed;
 
   const QuizScreen({
     super.key,
-    required this.project,
-    required this.quizConfig,
+    this.project,
+    this.initialProject,
+    this.quizConfig,
+    this.afterRenderUrl,
     this.apiClient,
     this.onCallPressed,
   });
@@ -24,12 +30,56 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   int _currentIndex = 0;
+  Project? _effectiveProject;
+  QuizConfig? _effectiveQuizConfig;
+  bool _isLoading = true;
 
   // Stored selections for each question ID
   final Map<String, String> _singleAnswers = {};
   final Set<String> _selectedTrustRequirements = {};
 
-  List<QuizQuestion> get _questions => widget.quizConfig.questions;
+  List<QuizQuestion> get _questions => _effectiveQuizConfig?.questions ?? [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    final providedProject = widget.initialProject ?? widget.project;
+    if (providedProject != null && widget.quizConfig != null) {
+      _effectiveProject = providedProject;
+      _effectiveQuizConfig = widget.quizConfig;
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      Project? proj = providedProject;
+      if (proj == null) {
+        final projectJson =
+            await rootBundle.loadString('assets/shared/fixtures/demo_project.json');
+        proj = Project.fromJson(jsonDecode(projectJson) as Map<String, dynamic>);
+      }
+
+      QuizConfig? cfg = widget.quizConfig;
+      if (cfg == null) {
+        final quizJson =
+            await rootBundle.loadString('assets/shared/quiz_questions.json');
+        cfg = QuizConfig.fromJson(jsonDecode(quizJson) as Map<String, dynamic>);
+      }
+
+      setState(() {
+        _effectiveProject = proj;
+        _effectiveQuizConfig = cfg;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Failed to initialize quiz data: $e');
+      setState(() => _isLoading = false);
+    }
+  }
 
   void _onBackPressed() {
     if (_currentIndex > 0) {
@@ -46,6 +96,8 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _onSubmit() {
+    if (_effectiveProject == null) return;
+
     final answers = QuizAnswers(
       budget: _singleAnswers['budget'] ?? '',
       scope: _singleAnswers['scope'] ?? '',
@@ -57,8 +109,9 @@ class _QuizScreenState extends State<QuizScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ResearchScreen(
-          project: widget.project,
+          project: _effectiveProject!,
           answers: answers,
+          afterRenderUrl: widget.afterRenderUrl,
           apiClient: widget.apiClient,
           onCallPressed: widget.onCallPressed,
         ),
@@ -68,7 +121,13 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_questions.isEmpty) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_questions.isEmpty || _effectiveProject == null || _effectiveQuizConfig == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Quiz')),
         body: const Center(child: Text('No quiz questions configured.')),
@@ -77,7 +136,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
     final question = _questions[_currentIndex];
     final currencyInfo =
-        widget.quizConfig.getCurrency(widget.project.client.country);
+        _effectiveQuizConfig!.getCurrency(_effectiveProject!.client.country);
     final isLastQuestion = _currentIndex == _questions.length - 1;
 
     final bool canProceed;

@@ -10,6 +10,7 @@ import 'results_screen.dart';
 class ResearchScreen extends StatefulWidget {
   final Project project;
   final QuizAnswers answers;
+  final String? afterRenderUrl;
   final ResearchApiClient? apiClient;
   final OnCallPressedCallback? onCallPressed;
   final CallApiClient? callApiClient;
@@ -19,6 +20,7 @@ class ResearchScreen extends StatefulWidget {
     super.key,
     required this.project,
     required this.answers,
+    this.afterRenderUrl,
     this.apiClient,
     this.onCallPressed,
     this.callApiClient,
@@ -124,11 +126,17 @@ class _ResearchScreenState extends State<ResearchScreen> {
       if (statusResp.isCompleted && statusResp.result != null) {
         _pollTimer?.cancel();
         if (!mounted) return;
+        final renderUrl = widget.afterRenderUrl ??
+            (widget.project.renderUrls.isNotEmpty
+                ? widget.project.renderUrls.first
+                : null);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => ResultsScreen(
               jobId: _jobId ?? '',
               result: statusResp.result!,
+              afterRenderUrl: renderUrl,
+              project: widget.project,
               onCallPressed: widget.onCallPressed,
               callApiClient: widget.callApiClient,
               audioPlayer: widget.audioPlayer,
@@ -185,7 +193,7 @@ class _ResearchScreenState extends State<ResearchScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Searching Paris for the best matches based on your Japandi project requirements',
+                'Searching ${widget.project.client.city} contractors for ${widget.project.style} ${widget.project.room.type}...',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -252,8 +260,8 @@ class _ResearchScreenState extends State<ResearchScreen> {
                           child: Row(
                             children: [
                               Container(
-                                width: 36,
-                                height: 36,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isDone
@@ -262,29 +270,31 @@ class _ResearchScreenState extends State<ResearchScreen> {
                                           ? Theme.of(context).primaryColor
                                           : Colors.grey.shade300,
                                 ),
-                                child: Center(
-                                  child: isDone
-                                      ? const Icon(Icons.check,
-                                          color: Colors.white, size: 20)
-                                      : isCurrent
-                                          ? const SizedBox(
-                                              width: 18,
-                                              height: 18,
+                                child: isDone
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white, size: 20)
+                                    : isCurrent
+                                        ? const Center(
+                                            child: SizedBox(
+                                              width: 16,
+                                              height: 16,
                                               child: CircularProgressIndicator(
-                                                strokeWidth: 2.5,
-                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation(
+                                                        Colors.white),
                                               ),
-                                            )
-                                          : Text(
+                                            ),
+                                          )
+                                        : Center(
+                                            child: Text(
                                               '${index + 1}',
                                               style: TextStyle(
-                                                color: isPending
-                                                    ? Colors.grey.shade600
-                                                    : Colors.white,
+                                                color: Colors.grey.shade600,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                ),
+                                          ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -297,22 +307,20 @@ class _ResearchScreenState extends State<ResearchScreen> {
                                         fontWeight: isCurrent
                                             ? FontWeight.bold
                                             : FontWeight.w500,
+                                        color: isPending
+                                            ? Colors.grey.shade400
+                                            : Colors.black87,
                                         fontSize: 15,
-                                        color: isCurrent
-                                            ? Theme.of(context).primaryColor
-                                            : isDone
-                                                ? Colors.black87
-                                                : Colors.grey,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       phaseItem['desc']!,
                                       style: TextStyle(
+                                        color: isPending
+                                            ? Colors.grey.shade400
+                                            : Colors.grey.shade600,
                                         fontSize: 12,
-                                        color: isCurrent
-                                            ? Colors.black54
-                                            : Colors.grey.shade500,
                                       ),
                                     ),
                                   ],
@@ -326,13 +334,15 @@ class _ResearchScreenState extends State<ResearchScreen> {
                   ),
                 ),
                 const Spacer(),
-                Center(
-                  child: Text(
-                    'Status: $_status ($_phase)',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: Text(
+                      'This takes about 10-30 seconds',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
               ],
             ],
           ),

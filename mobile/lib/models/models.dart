@@ -1050,3 +1050,171 @@ class CallStatusResponse {
     };
   }
 }
+
+
+/// Request payload for creating a renovation render.
+class RenderRequest {
+  final String imageBase64;
+  final String mimeType;
+  final String instruction;
+  final String? city;
+  final String? country;
+
+  RenderRequest({
+    required this.imageBase64,
+    required this.mimeType,
+    required this.instruction,
+    this.city,
+    this.country,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'image_base64': imageBase64,
+      'mime_type': mimeType,
+      'instruction': instruction,
+      if (city != null) 'city': city,
+      if (country != null) 'country': country,
+    };
+  }
+
+  factory RenderRequest.fromJson(Map<String, dynamic> json) {
+    return RenderRequest(
+      imageBase64: json['image_base64'] as String? ?? '',
+      mimeType: json['mime_type'] as String? ?? 'image/jpeg',
+      instruction: json['instruction'] as String? ?? '',
+      city: json['city'] as String?,
+      country: json['country'] as String?,
+    );
+  }
+}
+
+/// The result of a completed renovation render.
+class RenderResult {
+  final String beforeUrl;
+  final String afterUrl;
+  final String renovationPrompt;
+  final String voiceConfirmation;
+  final String? audioUrl;
+  final String modelUsed;
+  final int latencyMs;
+  final RoomInfo room;
+  final String style;
+  final List<WorkItem> workItems;
+
+  RenderResult({
+    required this.beforeUrl,
+    required this.afterUrl,
+    required this.renovationPrompt,
+    required this.voiceConfirmation,
+    this.audioUrl,
+    required this.modelUsed,
+    required this.latencyMs,
+    required this.room,
+    required this.style,
+    required this.workItems,
+  });
+
+  factory RenderResult.fromJson(Map<String, dynamic> json) {
+    return RenderResult(
+      beforeUrl: json['before_url'] as String? ?? '',
+      afterUrl: json['after_url'] as String? ?? '',
+      renovationPrompt: json['renovation_prompt'] as String? ?? '',
+      voiceConfirmation: json['voice_confirmation'] as String? ?? '',
+      audioUrl: json['audio_url'] as String?,
+      modelUsed: json['model_used'] as String? ?? '',
+      latencyMs: json['latency_ms'] as int? ?? 0,
+      room: RoomInfo.fromJson((json['room'] as Map<String, dynamic>?) ?? {}),
+      style: json['style'] as String? ?? '',
+      workItems: (json['work_items'] as List<dynamic>?)
+              ?.map((e) => WorkItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'before_url': beforeUrl,
+      'after_url': afterUrl,
+      'renovation_prompt': renovationPrompt,
+      'voice_confirmation': voiceConfirmation,
+      'audio_url': audioUrl,
+      'model_used': modelUsed,
+      'latency_ms': latencyMs,
+      'room': room.toJson(),
+      'style': style,
+      'work_items': workItems.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  Project toProject({
+    required String city,
+    String country = 'France',
+    required String baseUrl,
+  }) {
+    final cleanCity = city.trim().isEmpty ? 'Paris' : city.trim();
+    final cleanBaseUrl = baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final cleanAfterUrl = afterUrl.startsWith('/') ? afterUrl : '/$afterUrl';
+    final resolvedUrl =
+        afterUrl.startsWith('http') ? afterUrl : '$cleanBaseUrl$cleanAfterUrl';
+
+    return Project(
+      projectId: 'studio-${DateTime.now().millisecondsSinceEpoch}',
+      client: ClientLocation(city: cleanCity, country: country),
+      room: room,
+      style: style,
+      renderUrls: [resolvedUrl],
+      workItems: workItems,
+    );
+  }
+}
+
+/// Status of a renovation render job.
+class RenderStatusResponse {
+  final String status;
+  final String? phase;
+  final bool isReplay;
+  final RenderResult? result;
+  final List<String> warnings;
+  final String? error;
+
+  RenderStatusResponse({
+    required this.status,
+    this.phase,
+    this.isReplay = false,
+    this.result,
+    this.warnings = const [],
+    this.error,
+  });
+
+  bool get isCompleted => status == 'completed';
+  bool get isFailed => status == 'failed';
+
+  factory RenderStatusResponse.fromJson(Map<String, dynamic> json) {
+    return RenderStatusResponse(
+      status: json['status'] as String? ?? '',
+      phase: json['phase'] as String?,
+      isReplay: json['is_replay'] as bool? ?? false,
+      result: json['result'] != null
+          ? RenderResult.fromJson(json['result'] as Map<String, dynamic>)
+          : null,
+      warnings: (json['warnings'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      error: json['error'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'phase': phase,
+      'is_replay': isReplay,
+      'result': result?.toJson(),
+      'warnings': warnings,
+      'error': error,
+    };
+  }
+}
