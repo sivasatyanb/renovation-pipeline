@@ -26,7 +26,7 @@ from app.pipeline.researcher import run_deep_research
 from app.pipeline.structurer import structure_research_report
 from app.pipeline.verifier import verify_and_rank_contractors
 
-OUT_DIR = Path(r"C:\Users\sivas\.gemini\antigravity\brain\e81a0bf9-2fcf-4b7e-8bcb-2803c61fbf60\scratch")
+OUT_DIR = REPO_ROOT / "backend" / ".scratch"
 INTERACTION_FILE = OUT_DIR / "live_interaction_id.txt"
 RAW_REPORT_FILE = OUT_DIR / "live_raw_report.txt"
 STRUCTURING_FILE = OUT_DIR / "live_structuring_extraction.json"
