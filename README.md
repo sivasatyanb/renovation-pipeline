@@ -53,13 +53,13 @@ Copy-Item backend\.env.example backend\.env
 #### Local Development (Demo Mode — ~10s simulated phases)
 Ensure `DEMO_MODE=true` in `backend/.env`:
 ```powershell
-.\backend\.venv\Scripts\uvicorn.exe backend.app.main:app --reload --port 8000
+.\backend\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --port 8000 --reload
 ```
 
 #### Live Deep Research Mode
 Set `DEMO_MODE=false` in `backend/.env`:
 ```powershell
-.\backend\.venv\Scripts\uvicorn.exe backend.app.main:app --port 8000
+.\backend\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --port 8000
 ```
 
 #### Expose Backend on LAN for a Physical Android Phone (`--host 0.0.0.0`)
@@ -70,7 +70,7 @@ To allow a physical Android phone on the same Wi-Fi/LAN network to reach the bac
    ```
 2. Add your LAN origin or subnet to `CORS_ALLOWED_ORIGINS` in `backend/.env` if needed, and bind Uvicorn to `0.0.0.0`:
    ```powershell
-   .\backend\.venv\Scripts\uvicorn.exe backend.app.main:app --host 0.0.0.0 --port 8000
+   .\backend\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --host 0.0.0.0 --port 8000
    ```
 3. Verify from your phone's browser that `http://<LAPTOP_LAN_IP>:8000/health` returns `{"status":"ok",...}`.
 
