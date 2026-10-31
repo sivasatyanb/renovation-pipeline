@@ -1,0 +1,64 @@
+{
+  "turns": [
+    {
+      "index": 0,
+      "speaker": "customer_agent",
+      "text": "Hello, I am an AI assistant calling for a client regarding painting and oak flooring for a 14 m2 Paris bedroom. Can you help?",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/0"
+    },
+    {
+      "index": 1,
+      "speaker": "renovator_agent",
+      "text": "Hello! We handle painting and flooring. Our non-binding estimate is 9200 EUR, including labour, materials, and VAT. How does that sound?",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/1"
+    },
+    {
+      "index": 2,
+      "speaker": "customer_agent",
+      "text": "Could you do 7100 EUR? The 14 m2 footprint allows combining crews in one 5-day slot, with flexible start timing.",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/2"
+    },
+    {
+      "index": 3,
+      "speaker": "renovator_agent",
+      "text": "7100 EUR is too low. With your flexible schedule, the best I can do is 8200 EUR, including labour, materials, and VAT.",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/3"
+    },
+    {
+      "index": 4,
+      "speaker": "customer_agent",
+      "text": "8200 EUR works non-bindingly. Does that include acoustic underlayment? Also, are you available for a site visit on 2026-11-02T10:00:00+01:00?",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/4"
+    },
+    {
+      "index": 5,
+      "speaker": "renovator_agent",
+      "text": "Yes, underlayment is included. I cannot do 10:00, but can we meet on 2026-11-02 at 14:00?",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/5"
+    },
+    {
+      "index": 6,
+      "speaker": "customer_agent",
+      "text": "Perfect, 2026-11-02T14:00:00+01:00 is confirmed. Please send your attestation d'assurance d\u00e9cennale before the visit. Thank you, goodbye!",
+      "audio_url": "/calls/f1b3802d-de41-43a7-8e71-1d60a300c388/audio/6"
+    }
+  ],
+  "outcome": {
+    "end_reason": "agreement",
+    "opening_price": 9200.0,
+    "final_price": 8200.0,
+    "savings": 1000.0,
+    "currency": "EUR",
+    "labour_included": true,
+    "materials_included": true,
+    "tax_included": true,
+    "scope_confirmed": true,
+    "agreed_slot": "2026-11-02T14:00:00+01:00",
+    "notes": "Scope includes painting, oak flooring, and acoustic underlayment for a 14 m2 Paris bedroom. Customer requested attestation d'assurance d\u00e9cennale before the site visit."
+  },
+  "match": {
+    "match": true,
+    "reasons": []
+  },
+  "warnings": []
+}
