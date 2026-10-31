@@ -36,6 +36,12 @@ def main() -> int:
         action="store_true",
         help="Skip creating a live background interaction on DEEP_RESEARCH_AGENT to save quota.",
     )
+    parser.add_argument(
+        "--poll-id",
+        type=str,
+        default=None,
+        help="Poll an existing Deep Research interaction ID until completion.",
+    )
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -125,7 +131,34 @@ def main() -> int:
         results["available_matching_models_error"] = f"{type(exc).__name__}: {exc}"
 
     # 3. Test DEEP_RESEARCH_AGENT via Interactions API
-    if not args.skip_deep_research:
+    if args.poll_id:
+        import time
+
+        iid = args.poll_id
+        for _ in range(30):
+            inter = client.interactions.get(iid)
+            d = inter.model_dump()
+            if inter.status in ("completed", "failed", "cancelled"):
+                results["DEEP_RESEARCH_AGENT"] = {
+                    "agent_id": deep_research_agent,
+                    "interaction_id": iid,
+                    "status": inter.status,
+                    "output_text_preview": (d.get("output_text") or "")[:300],
+                    "steps_count": len(d.get("steps") or []),
+                    "errors": d.get("errors"),
+                }
+                break
+            time.sleep(5)
+        else:
+            inter = client.interactions.get(iid)
+            d = inter.model_dump()
+            results["DEEP_RESEARCH_AGENT"] = {
+                "agent_id": deep_research_agent,
+                "interaction_id": iid,
+                "status": inter.status,
+                "steps_count": len(d.get("steps") or []),
+            }
+    elif not args.skip_deep_research:
         try:
             interaction = client.interactions.create(
                 agent=deep_research_agent,
