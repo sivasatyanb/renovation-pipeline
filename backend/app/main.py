@@ -43,12 +43,20 @@ from app.models import (
     JobStatusResponse,
     MatchDecision,
     MeetingInput,
+    RenderCreateResponse,
+    RenderRequest,
+    RenderStatusResponse,
     ResearchRequest,
     ResearchResult,
 )
 from app.pipeline.researcher import run_deep_research
 from app.pipeline.structurer import structure_research_report
 from app.pipeline.verifier import compute_score, verify_and_rank_contractors
+from app.rendering.service import (
+    RenderRecord,
+    run_render_job,
+    validate_and_decode_image,
+)
 from app.scheduling.calendar import schedule_in_person_meeting
 
 DEMO_RESULT_PATH: Path = SHARED_DIR / "fixtures" / "demo_result.json"
@@ -105,6 +113,7 @@ class CallRecord:
 
 JOBS: dict[str, JobRecord] = {}
 CALLS: dict[str, CallRecord] = {}
+RENDERS: dict[str, RenderRecord] = {}
 
 app = FastAPI(
     title="Automated Home-Renovation Research & Voice Bargaining API",
@@ -499,6 +508,9 @@ async def stop_call(call_id: str) -> CallStatusResponse:
             status_code=404, detail=f"Call '{call_id}' not found"
         )
 
+    if call.status in ("completed", "failed", "stopped"):
+        return _build_call_status_response(call, after=0)
+
     call.stop_requested = True
     call.status = "stopped"
     call.phase = "done"
@@ -515,3 +527,87 @@ async def stop_call(call_id: str) -> CallStatusResponse:
         call.task.cancel()
 
     return _build_call_status_response(call, after=0)
+
+
+def _build_render_status_response(record: RenderRecord) -> RenderStatusResponse:
+    """Build RenderStatusResponse from an in-memory RenderRecord."""
+    return RenderStatusResponse(
+        status=record.status,
+        phase=record.phase,
+        is_replay=record.is_replay,
+        result=record.result,
+        warnings=list(record.warnings),
+        error=record.error,
+    )
+
+
+@app.post("/renders", status_code=202, response_model=RenderCreateResponse)
+async def create_render(request: RenderRequest) -> RenderCreateResponse:
+    """Validate room image and renovation brief, enqueue render job, and return render_id."""
+    before_bytes, actual_mime = validate_and_decode_image(
+        request.image_base64,
+        request.mime_type,
+    )
+
+    render_id = str(uuid.uuid4())
+    record = RenderRecord(
+        render_id=render_id,
+        request=request,
+        before_bytes=before_bytes,
+        before_mime=actual_mime,
+        status="queued",
+        phase="planning",
+        is_replay=settings.render_replay,
+    )
+    RENDERS[render_id] = record
+    record.task = asyncio.create_task(run_render_job(record))
+
+    return RenderCreateResponse(render_id=render_id, status="queued")
+
+
+@app.get("/renders/{render_id}", response_model=RenderStatusResponse)
+async def get_render_status(render_id: str) -> RenderStatusResponse:
+    """Return current status, phase, warnings, and result/error for a studio render job."""
+    record = RENDERS.get(render_id)
+    if record is None:
+        raise HTTPException(
+            status_code=404, detail=f"Render '{render_id}' not found"
+        )
+    return _build_render_status_response(record)
+
+
+@app.get("/renders/{render_id}/image/before")
+async def get_render_before_image(render_id: str) -> Response:
+    """Return the original 'before' room photograph bytes."""
+    record = RENDERS.get(render_id)
+    if record is None or not record.before_bytes:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Before image for render '{render_id}' not found",
+        )
+    return Response(content=record.before_bytes, media_type=record.before_mime)
+
+
+@app.get("/renders/{render_id}/image/after")
+async def get_render_after_image(render_id: str) -> Response:
+    """Return the generated 'after' renovation render bytes."""
+    record = RENDERS.get(render_id)
+    if record is None or not record.after_bytes:
+        raise HTTPException(
+            status_code=404,
+            detail=f"After image for render '{render_id}' not found",
+        )
+    return Response(content=record.after_bytes, media_type=record.after_mime)
+
+
+@app.get("/renders/{render_id}/audio")
+async def get_render_audio(render_id: str) -> Response:
+    """Return WAV audio narration bytes for a completed render."""
+    record = RENDERS.get(render_id)
+    if record is None or record.audio_wav is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Audio for render '{render_id}' not found",
+        )
+    return Response(content=record.audio_wav, media_type="audio/wav")
+
