@@ -1,6 +1,6 @@
 # Automated Home-Renovation Pipeline — Deep Research & Contractor Vetting
 
-A mobile + backend pipeline that guides a homeowner through a 5-question renovation quiz, runs autonomous multi-phase **Gemini Deep Research** to discover and vet local contractors, normalises and verifies contractor phone numbers against live source web pages, and ranks the top 5 renovators with pre-built negotiation call briefs.
+A mobile + backend pipeline that guides a homeowner through a 5-question renovation quiz, runs autonomous multi-phase **Gemini Deep Research** to discover and vet local contractors, normalises and verifies contractor phone numbers against live source web pages, ranks the top renovators with pre-built negotiation call briefs, runs an **audible two-agent AI voice bargaining call** (Customer Agent vs. Renovator Agent), and **automatically schedules an in-person meeting** on Google Calendar when a deal matches the customer's requirements.
 
 ---
 
@@ -8,10 +8,10 @@ A mobile + backend pipeline that guides a homeowner through a 5-question renovat
 
 | Directory | Description |
 | :--- | :--- |
-| `/shared` | Canonical JSON Schemas (`research_request`, `research_response`, `job_status`), 5 MCQ config (`quiz_questions.json`), and JSON fixtures (`demo_project.json`, `demo_result.json`). |
-| `/backend` | Python + FastAPI backend implementing the 3-phase pipeline (`researching` -> `structuring` -> `verifying`) and `DEMO_MODE`. |
-| `/mobile` | Flutter app (Android + Web) implementing the 5-screen flow: Start -> Quiz -> Research Progress -> Ranked Results -> Contractor Profile Details. |
-| `AGENTS.md` | Standing rules, directory ownership, and architecture contract. |
+| `/shared` | Canonical JSON Schemas (`research_request`, `research_response`, `job_status`, `call_request`, `call_status`), 5 MCQ config (`quiz_questions.json`), and JSON fixtures (`demo_project.json`, `demo_result.json`, `demo_call.json`, `demo_call_replay/`). |
+| `/backend` | Python + FastAPI backend implementing the 3-phase research pipeline, two-agent voice negotiation (`TALK_MODEL` + `TTS_MODEL`), deterministic outcome/match verification, Google Calendar scheduling, and `DEMO_MODE` / `CALL_REPLAY`. |
+| `/mobile` | Flutter app (Android + Web) implementing the full flow: Start -> Quiz -> Research Progress -> Ranked Results -> Contractor Profile Details -> Live Voice Bargaining & Meeting Booking (`CallScreen`). |
+| `AGENTS.md` | Standing rules, directory ownership, safety guardrails, and architecture contract. |
 
 ---
 
@@ -38,9 +38,13 @@ Copy-Item backend\.env.example backend\.env
 # Edit backend\.env and set GEMINI_API_KEY=...
 ```
 
-### Verify Gemini Models & Deep Research Agent
+### Verify Gemini Models, Deep Research, TALK_MODEL & TTS_MODEL
 ```powershell
+# Verify STRUCTURING_MODEL and FALLBACK_MODEL:
 .\backend\.venv\Scripts\python.exe backend/scripts/spike_gemini.py --skip-deep-research
+
+# Verify TALK_MODEL (gemini-3.8-flash) and TTS_MODEL (gemini-3.8-flash-tts):
+.\backend\.venv\Scripts\python.exe backend/scripts/spike_gemini.py --calls-only
 ```
 
 ### Run Backend Tests
@@ -50,11 +54,34 @@ Copy-Item backend\.env.example backend\.env
 
 ### Start the FastAPI Server
 
-#### Local Development (Demo Mode — ~10s simulated phases)
-Ensure `DEMO_MODE=true` in `backend/.env`:
+> **Important Note on In-Memory State (`JOBS` & `CALLS`)**: Run the backend **without `--reload`** during live voice calls or end-to-end tests so in-memory research jobs and synthesized WAV call audio are not cleared on file changes.
+
+#### Local Development (Demo Research Mode + Live Voice Call)
+Ensure `DEMO_MODE=true` and `CALL_REPLAY=false` in `backend/.env`:
 ```powershell
-.\backend\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --port 8000 --reload
+.\backend\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --port 8000
 ```
+
+#### Stage Replay Mode (`CALL_REPLAY=true` — Zero Gemini Calls)
+After a successful live call, the backend automatically saves the turns, outcome, and WAV audio files to `shared/fixtures/demo_call_replay/` (falling back to transcript-only `shared/fixtures/demo_call.json` if no recording exists).
+To replay a call on stage with zero Gemini API calls:
+1. Set `CALL_REPLAY=true` in `backend/.env`.
+2. Start the backend:
+   ```powershell
+   .\backend\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --port 8000
+   ```
+3. The mobile app will play the recorded conversation and display a **Replay** badge while running the exact same match and calendar scheduling logic.
+
+#### Google Calendar OAuth Setup (Automatic In-Person Meeting Booking)
+When a call ends in a verified **Match**, the backend automatically books a **45-minute in-person renovation meeting** at the agreed slot:
+- **Without OAuth (`token.json` absent)**: The call still succeeds and returns `status="link_only"` with a clickable **Google Calendar Template URL** (`https://calendar.google.com/calendar/render?action=TEMPLATE&...`).
+- **With Google Calendar OAuth (`token.json` present)**: The backend calls Google Calendar API `events.insert` with a deterministic event ID (preventing duplicate events on reruns).
+  1. Download an OAuth 2.0 Desktop Client JSON from Google Cloud Console (with Google Calendar API enabled) and save it as `backend/credentials.json` (never committed to git).
+  2. Run the one-time interactive sign-in script in your browser to generate `backend/token.json`:
+     ```powershell
+     .\backend\.venv\Scripts\python.exe backend/scripts/google_calendar_auth.py
+     ```
+  3. **Attendee Safety Allowlist (`INVITE_ALLOWLIST`)**: By default, `INVITE_ALLOWLIST=` is empty so no external email invitations are sent. To allow inviting specific test email addresses, set `INVITE_ALLOWLIST=your.email@example.com` in `backend/.env`. Contractors are never invited.
 
 #### Live Deep Research Mode
 Set `DEMO_MODE=false` in `backend/.env`:
