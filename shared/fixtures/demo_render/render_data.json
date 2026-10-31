@@ -1,0 +1,26 @@
+{
+  "renovation_prompt": "Strictly preserve the exact camera angle, perspective, room geometry, doors, and the window position and size from the input photo. Renovate this bedroom into a serene Japandi bedroom: paint all walls and ceiling in a smooth matte warm off-white tone, replace the flooring with natural wide-plank light oak parquet with a matte finish, and dress the low wooden bed in neutral linen bedding with coherent natural daylight coming through the window. Photorealistic architectural interior render.",
+  "voice_confirmation": "Your Japandi bedroom render is ready, featuring warm off-white walls and ceiling with natural oak parquet flooring while keeping your window and layout.",
+  "model_used": "gemini-2.5-flash-image",
+  "latency_ms": 8217,
+  "room": {
+    "type": "bedroom",
+    "surface_m2": 14,
+    "confidence": "low"
+  },
+  "style": "japandi",
+  "work_items": [
+    {
+      "trade": "painting",
+      "description": "Walls and ceiling",
+      "quantity": 38,
+      "unit": "m2"
+    },
+    {
+      "trade": "flooring",
+      "description": "Oak parquet installation",
+      "quantity": 14,
+      "unit": "m2"
+    }
+  ]
+}

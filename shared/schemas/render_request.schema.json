@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renovai.local/schemas/render_request.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["image_base64", "mime_type", "instruction"],
+  "properties": {
+    "image_base64": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mime_type": {
+      "type": "string",
+      "enum": ["image/jpeg", "image/png", "image/webp"]
+    },
+    "instruction": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "city": {
+      "type": ["string", "null"]
+    },
+    "country": {
+      "type": ["string", "null"]
+    }
+  }
+}

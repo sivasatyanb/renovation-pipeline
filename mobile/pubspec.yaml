@@ -64,6 +64,7 @@ flutter:
     - assets/shared/quiz_questions.json
     - assets/shared/fixtures/demo_project.json
     - assets/shared/fixtures/demo_result.json
+    - assets/shared/fixtures/demo_render/before.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

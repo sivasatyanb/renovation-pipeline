@@ -54,6 +54,11 @@ def main() -> int:
         help="Run only the smallest possible TALK_MODEL text call and TTS_MODEL audio call.",
     )
     parser.add_argument(
+        "--render-only",
+        action="store_true",
+        help="Run only a minimal IMAGE_MODEL check on a tiny synthetic image.",
+    )
+    parser.add_argument(
         "--poll-id",
         type=str,
         default=None,
@@ -76,6 +81,9 @@ def main() -> int:
     tts_model = os.environ.get("TTS_MODEL", "gemini-3.8-flash-tts")
     buyer_voice = os.environ.get("BUYER_VOICE", "Kore")
     seller_voice = os.environ.get("SELLER_VOICE", "Puck")
+    render_plan_model = os.environ.get("RENDER_PLAN_MODEL", "gemini-3.8-flash")
+    image_model = os.environ.get("IMAGE_MODEL", "gemini-2.5-flash-image")
+    image_fallback_model = os.environ.get("IMAGE_FALLBACK_MODEL", "gemini-3.1-flash-image")
 
     report: dict[str, object] = {
         "configured": {
@@ -86,6 +94,9 @@ def main() -> int:
             "TTS_MODEL": tts_model,
             "BUYER_VOICE": buyer_voice,
             "SELLER_VOICE": seller_voice,
+            "RENDER_PLAN_MODEL": render_plan_model,
+            "IMAGE_MODEL": image_model,
+            "IMAGE_FALLBACK_MODEL": image_fallback_model,
         },
         "env_file_exists": env_path.exists(),
         "api_key_present": bool(api_key and api_key != "your_gemini_api_key_here"),
@@ -120,6 +131,52 @@ def main() -> int:
 
     client = genai.Client(api_key=api_key)
     results: dict[str, object] = {}
+
+    if args.render_only:
+        import base64
+        # 1x1 white PNG
+        tiny_png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
+        )
+        for label, model_id in [("IMAGE_MODEL", image_model), ("IMAGE_FALLBACK_MODEL", image_fallback_model)]:
+            try:
+                resp = client.models.generate_content(
+                    model=model_id,
+                    contents=[
+                        types.Part.from_bytes(data=tiny_png, mime_type="image/png"),
+                        "Generate a tiny warm off-white square image.",
+                    ],
+                    config=types.GenerateContentConfig(
+                        response_modalities=["TEXT", "IMAGE"],
+                    ),
+                )
+                found_image = False
+                img_mime = ""
+                img_len = 0
+                for cand in resp.candidates or []:
+                    for part in (cand.content.parts if cand.content else []) or []:
+                        if getattr(part, "inline_data", None) and part.inline_data.data:
+                            found_image = True
+                            img_mime = getattr(part.inline_data, "mime_type", "")
+                            img_len = len(part.inline_data.data)
+                            break
+                results[label] = {
+                    "model_id": model_id,
+                    "status": "ok" if found_image else "no_image_part",
+                    "mime_type": img_mime,
+                    "bytes_len": img_len,
+                }
+                if found_image:
+                    break
+            except Exception as exc:
+                results[label] = {
+                    "model_id": model_id,
+                    "status": "failed",
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+        report["results"] = results
+        print(json.dumps(report, indent=2))
+        return 0
 
     if args.calls_only:
         # 1. Smallest possible TALK_MODEL text call with cleaned schema

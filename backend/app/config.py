@@ -68,6 +68,10 @@ class Settings:
     invite_allowlist: list[str] = field(default_factory=list)
     google_credentials_file: str = "credentials.json"
     google_token_file: str = "token.json"
+    render_plan_model: str = "gemini-3.8-flash"
+    image_model: str = "gemini-2.5-flash-image"
+    image_fallback_model: str = "gemini-3.1-flash-image"
+    render_replay: bool = False
     demo_mode: bool = False
     cors_allowed_origins: list[str] = field(default_factory=list)
     cors_origin_regex: str = r"^http://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$"
@@ -150,6 +154,25 @@ def load_settings() -> Settings:
             "GOOGLE_TOKEN_FILE",
             _EXAMPLE_VALUES.get("GOOGLE_TOKEN_FILE", "token.json"),
         ).strip(),
+        render_plan_model=os.environ.get(
+            "RENDER_PLAN_MODEL",
+            _EXAMPLE_VALUES.get("RENDER_PLAN_MODEL", "gemini-3.8-flash"),
+        ).strip(),
+        image_model=os.environ.get(
+            "IMAGE_MODEL",
+            _EXAMPLE_VALUES.get("IMAGE_MODEL", "gemini-2.5-flash-image"),
+        ).strip(),
+        image_fallback_model=os.environ.get(
+            "IMAGE_FALLBACK_MODEL",
+            _EXAMPLE_VALUES.get("IMAGE_FALLBACK_MODEL", "gemini-3.1-flash-image"),
+        ).strip(),
+        render_replay=_parse_bool(
+            os.environ.get(
+                "RENDER_REPLAY",
+                _EXAMPLE_VALUES.get("RENDER_REPLAY", "false"),
+            ),
+            default=False,
+        ),
         demo_mode=_parse_bool(os.environ.get("DEMO_MODE"), default=False),
         cors_allowed_origins=_parse_origins(
             os.environ.get(
