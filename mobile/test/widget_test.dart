@@ -10,6 +10,9 @@ import 'package:renovation_mobile/screens/quiz_screen.dart';
 import 'package:renovation_mobile/screens/research_screen.dart';
 import 'package:renovation_mobile/screens/results_screen.dart';
 import 'package:renovation_mobile/services/api_client.dart';
+import 'package:renovation_mobile/screens/call_screen.dart';
+import 'package:renovation_mobile/services/audio_player_service.dart';
+import 'package:renovation_mobile/services/call_api_client.dart';
 
 class FakeResearchApiClient implements ResearchApiClient {
   final ResearchResult result;
@@ -50,6 +53,113 @@ class FakeResearchApiClient implements ResearchApiClient {
       phase: 'done',
       result: result,
     );
+  }
+}
+
+class FakeCallApiClient implements CallApiClient {
+  @override
+  final String baseUrl;
+
+  CallRequest? lastRequest;
+  int startCallCount = 0;
+  int getStatusCount = 0;
+  int stopCallCount = 0;
+  final List<CallStatusResponse> statusSequence;
+
+  FakeCallApiClient({
+    this.baseUrl = 'http://test-server:8000',
+    this.statusSequence = const [],
+  });
+
+  @override
+  Future<String> startCall(CallRequest request) async {
+    startCallCount++;
+    lastRequest = request;
+    return 'fake-call-001';
+  }
+
+  @override
+  Future<CallStatusResponse> getCallStatus(String callId, {int after = 0}) async {
+    final idx = getStatusCount < statusSequence.length
+        ? getStatusCount
+        : (statusSequence.isNotEmpty ? statusSequence.length - 1 : 0);
+    getStatusCount++;
+    if (statusSequence.isEmpty) {
+      return CallStatusResponse(
+        status: 'queued',
+        phase: 'negotiating',
+        turns: [],
+        warnings: [],
+      );
+    }
+    final resp = statusSequence[idx];
+    final filteredTurns = resp.turns.where((t) => t.index >= after).toList();
+    return CallStatusResponse(
+      status: resp.status,
+      phase: resp.phase,
+      simulated: resp.simulated,
+      isReplay: resp.isReplay,
+      turns: filteredTurns,
+      outcome: resp.outcome,
+      match: resp.match,
+      booking: resp.booking,
+      warnings: resp.warnings,
+      error: resp.error,
+    );
+  }
+
+  @override
+  Future<CallStatusResponse> stopCall(String callId) async {
+    stopCallCount++;
+    return CallStatusResponse(
+      status: 'stopped',
+      phase: 'done',
+      turns: [],
+      warnings: [],
+    );
+  }
+
+  @override
+  String resolveAudioUrl(String audioUrl) {
+    if (audioUrl.startsWith('http')) return audioUrl;
+    return '$baseUrl/$audioUrl';
+  }
+}
+
+class FakeCallAudioPlayer implements CallAudioPlayer {
+  final List<String> playedUrls = [];
+  final bool shouldThrow;
+  final Duration playDuration;
+  final void Function(String url)? onPlayStarted;
+  int stopCount = 0;
+  int disposeCount = 0;
+
+  FakeCallAudioPlayer({
+    this.shouldThrow = false,
+    this.playDuration = Duration.zero,
+    this.onPlayStarted,
+  });
+
+  @override
+  Future<void> playUrl(String url) async {
+    onPlayStarted?.call(url);
+    if (shouldThrow) {
+      throw Exception('Audio player simulated failure');
+    }
+    if (playDuration > Duration.zero) {
+      await Future.delayed(playDuration);
+    }
+    playedUrls.add(url);
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCount++;
   }
 }
 
@@ -500,5 +610,270 @@ void main() {
       await tester.pumpAndSettle();
       expect(detailsCallId, equals(contractorWithFlags.id));
     });
+
+    testWidgets(
+      '6. job_id reaches CallScreen from ResearchScreen -> ResultsScreen -> tapping Call, and prefilled email/address + label are shown',
+      (tester) async {
+        final fakeResearch = FakeResearchApiClient(result: demoResult);
+        final fakeCallApi = FakeCallApiClient(
+          statusSequence: [
+            CallStatusResponse(
+              status: 'queued',
+              phase: 'negotiating',
+              turns: [],
+              warnings: [],
+            ),
+          ],
+        );
+        final fakeAudio = FakeCallAudioPlayer();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ResearchScreen(
+              project: demoProject,
+              answers: QuizAnswers(
+                budget: '7000',
+                scope: 'partial',
+                timeline: 'flexible',
+                priority: 'balanced',
+                trustRequirements: ['insurance'],
+              ),
+              apiClient: fakeResearch,
+              callApiClient: fakeCallApi,
+              audioPlayer: fakeAudio,
+            ),
+          ),
+        );
+
+        // Advance through ResearchScreen into ResultsScreen
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ResultsScreen), findsOneWidget);
+
+        // Tap Call on contractor 1 (onCallPressed is null, so it navigates to CallScreen)
+        final callBtn = find.byKey(Key('call_button_${demoResult.contractors[0].id}'));
+        expect(callBtn, findsOneWidget);
+        await tester.ensureVisible(callBtn);
+        await tester.tap(callBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CallScreen), findsOneWidget);
+
+        // Verify permanent label
+        expect(
+          find.text('Simulated call: AI customer agent and AI renovator agent'),
+          findsOneWidget,
+        );
+
+        // Verify prefilled email and address
+        final emailFinder = find.byKey(const Key('call_email_field'));
+        final addressFinder = find.byKey(const Key('call_address_field'));
+        expect(emailFinder, findsOneWidget);
+        expect(addressFinder, findsOneWidget);
+        expect(find.text('demo.customer@example.com'), findsOneWidget);
+        expect(find.text('12 Rue de Rivoli, 75004 Paris, France'), findsOneWidget);
+
+        // Tap Start Call button
+        final startBtn = find.byKey(const Key('start_call_button'));
+        expect(startBtn, findsOneWidget);
+        await tester.tap(startBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(fakeCallApi.startCallCount, equals(1));
+        expect(fakeCallApi.lastRequest?.jobId, equals('fake-job-001'));
+        expect(fakeCallApi.lastRequest?.contractorId, equals(demoResult.contractors[0].id));
+        expect(fakeCallApi.lastRequest?.meeting.customerEmail, equals('demo.customer@example.com'));
+      },
+    );
+
+    testWidgets(
+      '7. Turns play strictly in order one at a time, transcript appears when audio starts, completion shows summary without max_price/floor_price',
+      (tester) async {
+        final turns = [
+          CallTurn(
+            index: 0,
+            speaker: 'customer_agent',
+            text: 'Hello renovator, we want Japandi style.',
+            audioUrl: 'audio/0.wav',
+          ),
+          CallTurn(
+            index: 1,
+            speaker: 'renovator_agent',
+            text: 'Hello customer, our estimate is 9200 EUR.',
+            audioUrl: 'audio/1.wav',
+          ),
+        ];
+
+        final outcome = CallOutcome(
+          endReason: 'agreement',
+          openingPrice: 9200,
+          finalPrice: 7650,
+          savings: 1550,
+          currency: 'EUR',
+          labourIncluded: true,
+          materialsIncluded: true,
+          taxIncluded: true,
+          scopeConfirmed: true,
+          agreedSlot: '2026-11-02T14:00:00+01:00',
+          notes: 'Agreed on Japandi finishes',
+        );
+
+        final match = CallMatch(
+          match: true,
+          reasons: ['Within budget range', 'Valid decennale insurance'],
+        );
+
+        final booking = CallBooking(
+          status: 'created',
+          startsAt: '2026-11-02T14:00:00+01:00',
+          location: '12 Rue de Rivoli, Paris',
+          eventUrl: 'https://calendar.google.com/calendar/event?eid=demo123',
+          warnings: ['Simulated invite only'],
+        );
+
+        final fakeCallApi = FakeCallApiClient(
+          statusSequence: [
+            CallStatusResponse(
+              status: 'running',
+              phase: 'negotiating',
+              turns: turns,
+              warnings: [],
+            ),
+            CallStatusResponse(
+              status: 'completed',
+              phase: 'done',
+              turns: turns,
+              outcome: outcome,
+              match: match,
+              booking: booking,
+              warnings: [],
+            ),
+          ],
+        );
+
+        final fakeAudio = FakeCallAudioPlayer(
+          playDuration: const Duration(milliseconds: 200),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CallScreen(
+              jobId: 'job-999',
+              contractor: demoResult.contractors[0],
+              callApiClient: fakeCallApi,
+              audioPlayer: fakeAudio,
+              pollInterval: const Duration(milliseconds: 50),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Start Call
+        await tester.tap(find.byKey(const Key('start_call_button')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // When Turn 0 starts playing (playDuration = 200ms)
+        expect(find.text('Hello renovator, we want Japandi style.'), findsOneWidget);
+        expect(find.text('Hello customer, our estimate is 9200 EUR.'), findsNothing);
+
+        // Advance to complete Turn 0 and start Turn 1
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(find.text('Hello customer, our estimate is 9200 EUR.'), findsOneWidget);
+
+        // Finish Turn 1 playback
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        // Verify summary card
+        expect(find.byKey(const Key('call_summary_card')), findsOneWidget);
+        expect(find.textContaining('9200 EUR -> 7650 EUR (Saved 1550 EUR)'), findsOneWidget);
+        expect(find.text('Match'), findsOneWidget);
+        expect(find.text('• Within budget range'), findsOneWidget);
+        expect(find.text('• Valid decennale insurance'), findsOneWidget);
+        expect(find.byKey(const Key('booking_event_link')), findsOneWidget);
+        expect(find.text('https://calendar.google.com/calendar/event?eid=demo123'), findsOneWidget);
+
+        // Strict guardrail check
+        expect(find.textContaining('max_price'), findsNothing);
+        expect(find.textContaining('floor_price'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '8. Fallback works without audio (audio_url null or audio player error still displays transcript turns and completes)',
+      (tester) async {
+        final turns = [
+          CallTurn(
+            index: 0,
+            speaker: 'customer_agent',
+            text: 'Turn 1 with null audio',
+            audioUrl: null,
+          ),
+          CallTurn(
+            index: 1,
+            speaker: 'renovator_agent',
+            text: 'Turn 2 with failing audio player',
+            audioUrl: 'audio/error.wav',
+          ),
+        ];
+
+        final outcome = CallOutcome(
+          endReason: 'agreement',
+          openingPrice: 8000,
+          finalPrice: 7000,
+          savings: 1000,
+          currency: 'EUR',
+        );
+
+        final fakeCallApi = FakeCallApiClient(
+          statusSequence: [
+            CallStatusResponse(
+              status: 'completed',
+              phase: 'done',
+              turns: turns,
+              outcome: outcome,
+              match: CallMatch(match: true, reasons: ['Good fit']),
+              booking: CallBooking(status: 'link_only', warnings: []),
+              warnings: ['Replay fallback'],
+              isReplay: true,
+            ),
+          ],
+        );
+
+        final fakeAudio = FakeCallAudioPlayer(shouldThrow: true);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CallScreen(
+              jobId: 'job-fallback-123',
+              contractor: demoResult.contractors[0],
+              callApiClient: fakeCallApi,
+              audioPlayer: fakeAudio,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Start call
+        await tester.tap(find.byKey(const Key('start_call_button')));
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // Both turns should be visible
+        expect(find.text('Turn 1 with null audio'), findsOneWidget);
+        expect(find.text('Turn 2 with failing audio player'), findsOneWidget);
+
+        // Replay badge visible
+        expect(find.byKey(const Key('replay_badge')), findsOneWidget);
+
+        // Completion summary card visible
+        expect(find.byKey(const Key('call_summary_card')), findsOneWidget);
+        expect(find.textContaining('8000 EUR -> 7000 EUR (Saved 1000 EUR)'), findsOneWidget);
+      },
+    );
   });
 }

@@ -1,21 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
+import '../services/audio_player_service.dart';
+import '../services/call_api_client.dart';
 import '../services/call_handler.dart';
+import 'call_screen.dart';
 
 class DetailsScreen extends StatelessWidget {
+  final String jobId;
   final Contractor contractor;
   final OnCallPressedCallback? onCallPressed;
+  final CallApiClient? callApiClient;
+  final CallAudioPlayer? audioPlayer;
 
   const DetailsScreen({
     super.key,
+    this.jobId = '',
     required this.contractor,
     this.onCallPressed,
+    this.callApiClient,
+    this.audioPlayer,
   });
 
-  void _onCall() {
+  void _onCall(BuildContext context) {
     debugPrint('Call pressed for contractor: ${contractor.id}');
-    onCallPressed?.call(contractor);
+    if (onCallPressed != null) {
+      onCallPressed!(contractor);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CallScreen(
+            jobId: jobId,
+            contractor: contractor,
+            callApiClient: callApiClient,
+            audioPlayer: audioPlayer,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _launchUrlString(BuildContext context, String url) async {
@@ -41,7 +63,7 @@ class DetailsScreen extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8.0),
             child: TextButton.icon(
               key: const Key('details_call_button'),
-              onPressed: _onCall,
+              onPressed: () => _onCall(context),
               icon: const Icon(Icons.phone, color: Colors.green),
               label: const Text(
                 'Call',
@@ -595,7 +617,7 @@ class DetailsScreen extends StatelessWidget {
           // Bottom Call Button
           ElevatedButton.icon(
             key: const Key('details_bottom_call_button'),
-            onPressed: _onCall,
+            onPressed: () => _onCall(context),
             icon: const Icon(Icons.phone),
             label: const Text('Call Contractor'),
             style: ElevatedButton.styleFrom(
