@@ -1,0 +1,775 @@
+import 'dart:convert';
+
+/// Client location containing city and country.
+class ClientLocation {
+  final String city;
+  final String country;
+
+  ClientLocation({
+    required this.city,
+    required this.country,
+  });
+
+  ClientLocation copyWith({
+    String? city,
+    String? country,
+  }) {
+    return ClientLocation(
+      city: city ?? this.city,
+      country: country ?? this.country,
+    );
+  }
+
+  factory ClientLocation.fromJson(Map<String, dynamic> json) {
+    return ClientLocation(
+      city: json['city'] as String? ?? '',
+      country: json['country'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'city': city,
+      'country': country,
+    };
+  }
+}
+
+/// Room information.
+class RoomInfo {
+  final String type;
+  final num surfaceM2;
+  final String confidence;
+
+  RoomInfo({
+    required this.type,
+    required this.surfaceM2,
+    required this.confidence,
+  });
+
+  RoomInfo copyWith({
+    String? type,
+    num? surfaceM2,
+    String? confidence,
+  }) {
+    return RoomInfo(
+      type: type ?? this.type,
+      surfaceM2: surfaceM2 ?? this.surfaceM2,
+      confidence: confidence ?? this.confidence,
+    );
+  }
+
+  factory RoomInfo.fromJson(Map<String, dynamic> json) {
+    return RoomInfo(
+      type: json['type'] as String? ?? '',
+      surfaceM2: json['surface_m2'] as num? ?? 0,
+      confidence: json['confidence'] as String? ?? 'low',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'surface_m2': surfaceM2,
+      'confidence': confidence,
+    };
+  }
+}
+
+/// A work item within a project.
+class WorkItem {
+  final String trade;
+  final String description;
+  final num quantity;
+  final String unit;
+
+  WorkItem({
+    required this.trade,
+    required this.description,
+    required this.quantity,
+    required this.unit,
+  });
+
+  factory WorkItem.fromJson(Map<String, dynamic> json) {
+    return WorkItem(
+      trade: json['trade'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      quantity: json['quantity'] as num? ?? 0,
+      unit: json['unit'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'trade': trade,
+      'description': description,
+      'quantity': quantity,
+      'unit': unit,
+    };
+  }
+}
+
+/// The renovation project description.
+class Project {
+  final String projectId;
+  final ClientLocation client;
+  final RoomInfo room;
+  final String style;
+  final List<String> renderUrls;
+  final List<WorkItem> workItems;
+
+  Project({
+    required this.projectId,
+    required this.client,
+    required this.room,
+    required this.style,
+    required this.renderUrls,
+    required this.workItems,
+  });
+
+  Project copyWith({
+    String? projectId,
+    ClientLocation? client,
+    RoomInfo? room,
+    String? style,
+    List<String>? renderUrls,
+    List<WorkItem>? workItems,
+  }) {
+    return Project(
+      projectId: projectId ?? this.projectId,
+      client: client ?? this.client,
+      room: room ?? this.room,
+      style: style ?? this.style,
+      renderUrls: renderUrls ?? this.renderUrls,
+      workItems: workItems ?? this.workItems,
+    );
+  }
+
+  factory Project.fromJson(Map<String, dynamic> json) {
+    return Project(
+      projectId: json['project_id'] as String? ?? '',
+      client: ClientLocation.fromJson(
+        (json['client'] as Map<String, dynamic>?) ?? {},
+      ),
+      room: RoomInfo.fromJson(
+        (json['room'] as Map<String, dynamic>?) ?? {},
+      ),
+      style: json['style'] as String? ?? '',
+      renderUrls: (json['render_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      workItems: (json['work_items'] as List<dynamic>?)
+              ?.map((e) => WorkItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'project_id': projectId,
+      'client': client.toJson(),
+      'room': room.toJson(),
+      'style': style,
+      'render_urls': renderUrls,
+      'work_items': workItems.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+/// Currency information.
+class CurrencyInfo {
+  final String code;
+  final String symbol;
+
+  CurrencyInfo({
+    required this.code,
+    required this.symbol,
+  });
+
+  factory CurrencyInfo.fromJson(Map<String, dynamic> json) {
+    return CurrencyInfo(
+      code: json['code'] as String? ?? 'EUR',
+      symbol: json['symbol'] as String? ?? '€',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'symbol': symbol,
+    };
+  }
+}
+
+/// Option for a quiz question.
+class QuizOption {
+  final String value;
+  final String labelTemplate;
+
+  QuizOption({
+    required this.value,
+    required this.labelTemplate,
+  });
+
+  String getFormattedLabel(String currencySymbol) {
+    return labelTemplate.replaceAll('{currency}', currencySymbol);
+  }
+
+  factory QuizOption.fromJson(Map<String, dynamic> json) {
+    return QuizOption(
+      value: json['value'] as String? ?? '',
+      labelTemplate: json['label_template'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'value': value,
+      'label_template': labelTemplate,
+    };
+  }
+}
+
+/// Quiz question definition.
+class QuizQuestion {
+  final String id;
+  final String question;
+  final String type;
+  final int minSelections;
+  final bool usesCurrencySymbol;
+  final List<QuizOption> options;
+
+  QuizQuestion({
+    required this.id,
+    required this.question,
+    required this.type,
+    this.minSelections = 1,
+    required this.usesCurrencySymbol,
+    required this.options,
+  });
+
+  bool get isMultiSelect => type == 'multi_select';
+
+  factory QuizQuestion.fromJson(Map<String, dynamic> json) {
+    return QuizQuestion(
+      id: json['id'] as String? ?? '',
+      question: json['question'] as String? ?? '',
+      type: json['type'] as String? ?? 'single_choice',
+      minSelections: json['min_selections'] as int? ?? 1,
+      usesCurrencySymbol: json['uses_currency_symbol'] as bool? ?? false,
+      options: (json['options'] as List<dynamic>?)
+              ?.map((e) => QuizOption.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'question': question,
+      'type': type,
+      'min_selections': minSelections,
+      'uses_currency_symbol': usesCurrencySymbol,
+      'options': options.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+/// Quiz configuration parsed from quiz_questions.json.
+class QuizConfig {
+  final Map<String, CurrencyInfo> currencyByCountry;
+  final List<QuizQuestion> questions;
+
+  QuizConfig({
+    required this.currencyByCountry,
+    required this.questions,
+  });
+
+  CurrencyInfo getCurrency(String? country) {
+    if (country != null && currencyByCountry.containsKey(country)) {
+      return currencyByCountry[country]!;
+    }
+    return currencyByCountry['default'] ??
+        CurrencyInfo(code: 'EUR', symbol: '€');
+  }
+
+  factory QuizConfig.fromJson(Map<String, dynamic> json) {
+    final currencyMap = <String, CurrencyInfo>{};
+    if (json['currency_by_country'] is Map<String, dynamic>) {
+      (json['currency_by_country'] as Map<String, dynamic>)
+          .forEach((key, val) {
+        if (val is Map<String, dynamic>) {
+          currencyMap[key] = CurrencyInfo.fromJson(val);
+        }
+      });
+    }
+
+    final questionsList = <QuizQuestion>[];
+    if (json['questions'] is List<dynamic>) {
+      for (final item in json['questions'] as List<dynamic>) {
+        if (item is Map<String, dynamic>) {
+          questionsList.add(QuizQuestion.fromJson(item));
+        }
+      }
+    }
+
+    return QuizConfig(
+      currencyByCountry: currencyMap,
+      questions: questionsList,
+    );
+  }
+
+  factory QuizConfig.fromRawJson(String rawJson) =>
+      QuizConfig.fromJson(json.decode(rawJson) as Map<String, dynamic>);
+}
+
+/// User answers submitted to the backend.
+class QuizAnswers {
+  final String budget;
+  final String scope;
+  final String timeline;
+  final String priority;
+  final List<String> trustRequirements;
+
+  QuizAnswers({
+    required this.budget,
+    required this.scope,
+    required this.timeline,
+    required this.priority,
+    required this.trustRequirements,
+  });
+
+  factory QuizAnswers.fromJson(Map<String, dynamic> json) {
+    return QuizAnswers(
+      budget: json['budget'] as String? ?? '',
+      scope: json['scope'] as String? ?? '',
+      timeline: json['timeline'] as String? ?? '',
+      priority: json['priority'] as String? ?? '',
+      trustRequirements: (json['trust_requirements'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'budget': budget,
+      'scope': scope,
+      'timeline': timeline,
+      'priority': priority,
+      'trust_requirements': trustRequirements,
+    };
+  }
+}
+
+/// Line item in a price estimate.
+class PriceLineItem {
+  final String label;
+  final num? low;
+  final num? high;
+
+  PriceLineItem({
+    required this.label,
+    this.low,
+    this.high,
+  });
+
+  factory PriceLineItem.fromJson(Map<String, dynamic> json) {
+    return PriceLineItem(
+      label: json['label'] as String? ?? '',
+      low: json['low'] as num?,
+      high: json['high'] as num?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'label': label,
+      'low': low,
+      'high': high,
+    };
+  }
+}
+
+/// Price estimate object.
+class PriceEstimate {
+  final num? low;
+  final num? high;
+  final String currency;
+  final List<PriceLineItem> lineItems;
+  final List<String> sourceUrls;
+
+  PriceEstimate({
+    this.low,
+    this.high,
+    required this.currency,
+    required this.lineItems,
+    required this.sourceUrls,
+  });
+
+  factory PriceEstimate.fromJson(Map<String, dynamic> json) {
+    return PriceEstimate(
+      low: json['low'] as num?,
+      high: json['high'] as num?,
+      currency: json['currency'] as String? ?? 'EUR',
+      lineItems: (json['line_items'] as List<dynamic>?)
+              ?.map((e) => PriceLineItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      sourceUrls: (json['source_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'low': low,
+      'high': high,
+      'currency': currency,
+      'line_items': lineItems.map((e) => e.toJson()).toList(),
+      'source_urls': sourceUrls,
+    };
+  }
+}
+
+/// Expected price range for a contractor.
+class ExpectedPrice {
+  final num? low;
+  final num? high;
+  final String currency;
+
+  ExpectedPrice({
+    this.low,
+    this.high,
+    required this.currency,
+  });
+
+  factory ExpectedPrice.fromJson(Map<String, dynamic> json) {
+    return ExpectedPrice(
+      low: json['low'] as num?,
+      high: json['high'] as num?,
+      currency: json['currency'] as String? ?? 'EUR',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'low': low,
+      'high': high,
+      'currency': currency,
+    };
+  }
+}
+
+/// Certification entry.
+class Certification {
+  final String name;
+  final String? sourceUrl;
+
+  Certification({
+    required this.name,
+    this.sourceUrl,
+  });
+
+  factory Certification.fromJson(Map<String, dynamic> json) {
+    return Certification(
+      name: json['name'] as String? ?? '',
+      sourceUrl: json['source_url'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'source_url': sourceUrl,
+    };
+  }
+}
+
+/// Subscores breakdown.
+class Subscores {
+  final num price;
+  final num reputation;
+  final num fit;
+  final num availability;
+
+  Subscores({
+    required this.price,
+    required this.reputation,
+    required this.fit,
+    required this.availability,
+  });
+
+  factory Subscores.fromJson(Map<String, dynamic> json) {
+    return Subscores(
+      price: json['price'] as num? ?? 0,
+      reputation: json['reputation'] as num? ?? 0,
+      fit: json['fit'] as num? ?? 0,
+      availability: json['availability'] as num? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'price': price,
+      'reputation': reputation,
+      'fit': fit,
+      'availability': availability,
+    };
+  }
+}
+
+/// Call brief for bargaining / inquiries.
+class CallBrief {
+  final num? targetPrice;
+  final num? maxPrice;
+  final List<String> leveragePoints;
+  final List<String> questionsToAsk;
+
+  CallBrief({
+    this.targetPrice,
+    this.maxPrice,
+    required this.leveragePoints,
+    required this.questionsToAsk,
+  });
+
+  factory CallBrief.fromJson(Map<String, dynamic> json) {
+    return CallBrief(
+      targetPrice: json['target_price'] as num?,
+      maxPrice: json['max_price'] as num?,
+      leveragePoints: (json['leverage_points'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      questionsToAsk: (json['questions_to_ask'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'target_price': targetPrice,
+      'max_price': maxPrice,
+      'leverage_points': leveragePoints,
+      'questions_to_ask': questionsToAsk,
+    };
+  }
+}
+
+/// Contractor profile.
+class Contractor {
+  final String id;
+  final int rank;
+  final String name;
+  final String phoneE164;
+  final bool phoneVerified;
+  final String? phoneSourceUrl;
+  final String? website;
+  final String? address;
+  final List<String> trades;
+  final num? rating;
+  final int? reviewCount;
+  final List<Certification> certifications;
+  final String? insurance;
+  final List<String> portfolioUrls;
+  final ExpectedPrice? expectedPrice;
+  final String? availability;
+  final num score;
+  final Subscores subscores;
+  final String whyRecommended;
+  final List<String> redFlags;
+  final List<String> sourceUrls;
+  final CallBrief? callBrief;
+
+  Contractor({
+    required this.id,
+    required this.rank,
+    required this.name,
+    required this.phoneE164,
+    required this.phoneVerified,
+    this.phoneSourceUrl,
+    this.website,
+    this.address,
+    required this.trades,
+    this.rating,
+    this.reviewCount,
+    required this.certifications,
+    this.insurance,
+    required this.portfolioUrls,
+    this.expectedPrice,
+    this.availability,
+    required this.score,
+    required this.subscores,
+    required this.whyRecommended,
+    required this.redFlags,
+    required this.sourceUrls,
+    this.callBrief,
+  });
+
+  factory Contractor.fromJson(Map<String, dynamic> json) {
+    return Contractor(
+      id: json['id'] as String? ?? '',
+      rank: json['rank'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      phoneE164: json['phone_e164'] as String? ?? '',
+      phoneVerified: json['phone_verified'] as bool? ?? false,
+      phoneSourceUrl: json['phone_source_url'] as String?,
+      website: json['website'] as String?,
+      address: json['address'] as String?,
+      trades: (json['trades'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      rating: json['rating'] as num?,
+      reviewCount: json['review_count'] as int?,
+      certifications: (json['certifications'] as List<dynamic>?)
+              ?.map((e) => Certification.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      insurance: json['insurance'] as String?,
+      portfolioUrls: (json['portfolio_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      expectedPrice: json['expected_price'] != null
+          ? ExpectedPrice.fromJson(
+              json['expected_price'] as Map<String, dynamic>)
+          : null,
+      availability: json['availability'] as String?,
+      score: json['score'] as num? ?? 0,
+      subscores: Subscores.fromJson(
+        (json['subscores'] as Map<String, dynamic>?) ?? {},
+      ),
+      whyRecommended: json['why_recommended'] as String? ?? '',
+      redFlags: (json['red_flags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      sourceUrls: (json['source_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      callBrief: json['call_brief'] != null
+          ? CallBrief.fromJson(json['call_brief'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'rank': rank,
+      'name': name,
+      'phone_e164': phoneE164,
+      'phone_verified': phoneVerified,
+      'phone_source_url': phoneSourceUrl,
+      'website': website,
+      'address': address,
+      'trades': trades,
+      'rating': rating,
+      'review_count': reviewCount,
+      'certifications': certifications.map((e) => e.toJson()).toList(),
+      'insurance': insurance,
+      'portfolio_urls': portfolioUrls,
+      'expected_price': expectedPrice?.toJson(),
+      'availability': availability,
+      'score': score,
+      'subscores': subscores.toJson(),
+      'why_recommended': whyRecommended,
+      'red_flags': redFlags,
+      'source_urls': sourceUrls,
+      'call_brief': callBrief?.toJson(),
+    };
+  }
+}
+
+/// Research result model.
+class ResearchResult {
+  final String projectId;
+  final bool isDemo;
+  final PriceEstimate priceEstimate;
+  final List<Contractor> contractors;
+  final List<String> warnings;
+
+  ResearchResult({
+    required this.projectId,
+    this.isDemo = false,
+    required this.priceEstimate,
+    required this.contractors,
+    required this.warnings,
+  });
+
+  factory ResearchResult.fromJson(Map<String, dynamic> json) {
+    return ResearchResult(
+      projectId: json['project_id'] as String? ?? '',
+      isDemo: json['is_demo'] as bool? ?? false,
+      priceEstimate: PriceEstimate.fromJson(
+        (json['price_estimate'] as Map<String, dynamic>?) ?? {},
+      ),
+      contractors: (json['contractors'] as List<dynamic>?)
+              ?.map((e) => Contractor.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      warnings: (json['warnings'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'project_id': projectId,
+      'is_demo': isDemo,
+      'price_estimate': priceEstimate.toJson(),
+      'contractors': contractors.map((e) => e.toJson()).toList(),
+      'warnings': warnings,
+    };
+  }
+}
+
+/// Job status response from GET /research/{job_id}.
+class JobStatusResponse {
+  final String status;
+  final String phase;
+  final ResearchResult? result;
+  final String? error;
+
+  JobStatusResponse({
+    required this.status,
+    required this.phase,
+    this.result,
+    this.error,
+  });
+
+  bool get isCompleted => status == 'completed';
+  bool get isFailed => status == 'failed';
+
+  factory JobStatusResponse.fromJson(Map<String, dynamic> json) {
+    return JobStatusResponse(
+      status: json['status'] as String? ?? '',
+      phase: json['phase'] as String? ?? '',
+      result: json['result'] != null
+          ? ResearchResult.fromJson(json['result'] as Map<String, dynamic>)
+          : null,
+      error: json['error'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'phase': phase,
+      'result': result?.toJson(),
+      'error': error,
+    };
+  }
+}

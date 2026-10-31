@@ -1,0 +1,80 @@
+{
+  "currency_by_country": {
+    "France": { "code": "EUR", "symbol": "€" },
+    "Germany": { "code": "EUR", "symbol": "€" },
+    "Spain": { "code": "EUR", "symbol": "€" },
+    "Italy": { "code": "EUR", "symbol": "€" },
+    "Netherlands": { "code": "EUR", "symbol": "€" },
+    "United Kingdom": { "code": "GBP", "symbol": "£" },
+    "UK": { "code": "GBP", "symbol": "£" },
+    "United States": { "code": "USD", "symbol": "$" },
+    "USA": { "code": "USD", "symbol": "$" },
+    "Switzerland": { "code": "CHF", "symbol": "CHF " },
+    "default": { "code": "EUR", "symbol": "€" }
+  },
+  "questions": [
+    {
+      "id": "budget",
+      "question": "What is your total budget, including labour, materials and tax?",
+      "type": "single_choice",
+      "uses_currency_symbol": true,
+      "options": [
+        { "value": "under_5k", "label_template": "Under {currency}5,000" },
+        { "value": "5k_15k", "label_template": "{currency}5,000-{currency}15,000" },
+        { "value": "15k_40k", "label_template": "{currency}15,000-{currency}40,000" },
+        { "value": "over_40k", "label_template": "Over {currency}40,000" },
+        { "value": "unknown", "label_template": "Not sure, estimate it for me" }
+      ]
+    },
+    {
+      "id": "scope",
+      "question": "How deep should the work go?",
+      "type": "single_choice",
+      "uses_currency_symbol": false,
+      "options": [
+        { "value": "cosmetic", "label_template": "Cosmetic only (paint, decor, light fixtures)" },
+        { "value": "partial", "label_template": "Partial (floors, joinery, some fixtures)" },
+        { "value": "full_nonstructural", "label_template": "Full room, no structural changes" },
+        { "value": "full_structural", "label_template": "Full room with electrical, plumbing or wall changes" }
+      ]
+    },
+    {
+      "id": "timeline",
+      "question": "When should the work start?",
+      "type": "single_choice",
+      "uses_currency_symbol": false,
+      "options": [
+        { "value": "under_one_month", "label_template": "Within 1 month" },
+        { "value": "one_to_three_months", "label_template": "In 1-3 months" },
+        { "value": "three_to_six_months", "label_template": "In 3-6 months" },
+        { "value": "flexible", "label_template": "Flexible, if it lowers the price" }
+      ]
+    },
+    {
+      "id": "priority",
+      "question": "What matters most?",
+      "type": "single_choice",
+      "uses_currency_symbol": false,
+      "options": [
+        { "value": "lowest_price", "label_template": "Lowest price" },
+        { "value": "balanced", "label_template": "Best value overall" },
+        { "value": "quality", "label_template": "Premium craftsmanship" },
+        { "value": "design_match", "label_template": "Closest match to my chosen style" }
+      ]
+    },
+    {
+      "id": "trust_requirements",
+      "question": "What must a renovator have?",
+      "type": "multi_select",
+      "min_selections": 1,
+      "uses_currency_symbol": false,
+      "options": [
+        { "value": "licensed_insured", "label_template": "Valid registration and insurance" },
+        { "value": "high_reviews", "label_template": "Strong reviews from many clients" },
+        { "value": "style_portfolio", "label_template": "Past projects in my style" },
+        { "value": "written_quote", "label_template": "Itemised written quote and warranty" },
+        { "value": "single_contact", "label_template": "One contact managing all trades" }
+      ]
+    }
+  ]
+}
