@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/audio_player_service.dart';
+import '../services/call_api_client.dart';
 import '../services/call_handler.dart';
 import 'results_screen.dart';
 
@@ -10,6 +12,8 @@ class ResearchScreen extends StatefulWidget {
   final QuizAnswers answers;
   final ResearchApiClient? apiClient;
   final OnCallPressedCallback? onCallPressed;
+  final CallApiClient? callApiClient;
+  final CallAudioPlayer? audioPlayer;
 
   const ResearchScreen({
     super.key,
@@ -17,6 +21,8 @@ class ResearchScreen extends StatefulWidget {
     required this.answers,
     this.apiClient,
     this.onCallPressed,
+    this.callApiClient,
+    this.audioPlayer,
   });
 
   @override
@@ -121,8 +127,11 @@ class _ResearchScreenState extends State<ResearchScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => ResultsScreen(
+              jobId: _jobId ?? '',
               result: statusResp.result!,
               onCallPressed: widget.onCallPressed,
+              callApiClient: widget.callApiClient,
+              audioPlayer: widget.audioPlayer,
             ),
           ),
         );

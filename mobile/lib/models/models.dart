@@ -773,3 +773,280 @@ class JobStatusResponse {
     };
   }
 }
+
+
+/// Meeting request details inside CallRequest.
+class MeetingRequest {
+  final String customerEmail;
+  final String address;
+  final List<String> slots;
+
+  MeetingRequest({
+    required this.customerEmail,
+    required this.address,
+    this.slots = const [],
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'customer_email': customerEmail,
+      'address': address,
+      'slots': slots,
+    };
+  }
+}
+
+/// Call request payload for starting a simulated negotiation call.
+class CallRequest {
+  final String jobId;
+  final String contractorId;
+  final MeetingRequest meeting;
+
+  CallRequest({
+    required this.jobId,
+    required this.contractorId,
+    required this.meeting,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'job_id': jobId,
+      'contractor_id': contractorId,
+      'meeting': meeting.toJson(),
+    };
+  }
+}
+
+/// A single turn in a call transcript.
+class CallTurn {
+  final int index;
+  final String speaker; // 'customer_agent' | 'renovator_agent'
+  final String text;
+  final String? audioUrl;
+
+  CallTurn({
+    required this.index,
+    required this.speaker,
+    required this.text,
+    this.audioUrl,
+  });
+
+  factory CallTurn.fromJson(Map<String, dynamic> json) {
+    return CallTurn(
+      index: json['index'] as int? ?? 0,
+      speaker: json['speaker'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+      audioUrl: json['audio_url'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'index': index,
+      'speaker': speaker,
+      'text': text,
+      'audio_url': audioUrl,
+    };
+  }
+}
+
+/// Outcome extracted and computed at the end of a call.
+class CallOutcome {
+  final String endReason;
+  final num? openingPrice;
+  final num? finalPrice;
+  final num? savings;
+  final String? currency;
+  final bool? labourIncluded;
+  final bool? materialsIncluded;
+  final bool? taxIncluded;
+  final bool? scopeConfirmed;
+  final String? agreedSlot;
+  final String? notes;
+
+  CallOutcome({
+    required this.endReason,
+    this.openingPrice,
+    this.finalPrice,
+    this.savings,
+    this.currency,
+    this.labourIncluded,
+    this.materialsIncluded,
+    this.taxIncluded,
+    this.scopeConfirmed,
+    this.agreedSlot,
+    this.notes,
+  });
+
+  factory CallOutcome.fromJson(Map<String, dynamic> json) {
+    return CallOutcome(
+      endReason: json['end_reason'] as String? ?? '',
+      openingPrice: json['opening_price'] as num?,
+      finalPrice: json['final_price'] as num?,
+      savings: json['savings'] as num?,
+      currency: json['currency'] as String?,
+      labourIncluded: json['labour_included'] as bool?,
+      materialsIncluded: json['materials_included'] as bool?,
+      taxIncluded: json['tax_included'] as bool?,
+      scopeConfirmed: json['scope_confirmed'] as bool?,
+      agreedSlot: json['agreed_slot'] as String?,
+      notes: json['notes'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'end_reason': endReason,
+      'opening_price': openingPrice,
+      'final_price': finalPrice,
+      'savings': savings,
+      'currency': currency,
+      'labour_included': labourIncluded,
+      'materials_included': materialsIncluded,
+      'tax_included': taxIncluded,
+      'scope_confirmed': scopeConfirmed,
+      'agreed_slot': agreedSlot,
+      'notes': notes,
+    };
+  }
+}
+
+/// Match determination for a call.
+class CallMatch {
+  final bool match;
+  final List<String> reasons;
+
+  CallMatch({
+    required this.match,
+    required this.reasons,
+  });
+
+  factory CallMatch.fromJson(Map<String, dynamic> json) {
+    return CallMatch(
+      match: json['match'] as bool? ?? false,
+      reasons: (json['reasons'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'match': match,
+      'reasons': reasons,
+    };
+  }
+}
+
+/// In-person meeting booking result.
+class CallBooking {
+  final String status; // 'created' | 'link_only' | 'failed'
+  final String? startsAt;
+  final String? location;
+  final String? eventUrl;
+  final List<String> warnings;
+
+  CallBooking({
+    required this.status,
+    this.startsAt,
+    this.location,
+    this.eventUrl,
+    required this.warnings,
+  });
+
+  factory CallBooking.fromJson(Map<String, dynamic> json) {
+    return CallBooking(
+      status: json['status'] as String? ?? '',
+      startsAt: json['starts_at'] as String?,
+      location: json['location'] as String?,
+      eventUrl: json['event_url'] as String?,
+      warnings: (json['warnings'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'starts_at': startsAt,
+      'location': location,
+      'event_url': eventUrl,
+      'warnings': warnings,
+    };
+  }
+}
+
+/// Overall status of a call session from GET /calls/{call_id}.
+class CallStatusResponse {
+  final String status; // 'queued' | 'running' | 'completed' | 'failed' | 'stopped'
+  final String phase; // 'negotiating' | 'analyzing' | 'scheduling' | 'done'
+  final bool simulated;
+  final bool isReplay;
+  final List<CallTurn> turns;
+  final CallOutcome? outcome;
+  final CallMatch? match;
+  final CallBooking? booking;
+  final List<String> warnings;
+  final String? error;
+
+  CallStatusResponse({
+    required this.status,
+    required this.phase,
+    this.simulated = true,
+    this.isReplay = false,
+    required this.turns,
+    this.outcome,
+    this.match,
+    this.booking,
+    required this.warnings,
+    this.error,
+  });
+
+  bool get isTerminal =>
+      status == 'completed' || status == 'failed' || status == 'stopped';
+
+  factory CallStatusResponse.fromJson(Map<String, dynamic> json) {
+    return CallStatusResponse(
+      status: json['status'] as String? ?? '',
+      phase: json['phase'] as String? ?? '',
+      simulated: json['simulated'] as bool? ?? true,
+      isReplay: json['is_replay'] as bool? ?? false,
+      turns: (json['turns'] as List<dynamic>?)
+              ?.map((e) => CallTurn.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      outcome: json['outcome'] != null
+          ? CallOutcome.fromJson(json['outcome'] as Map<String, dynamic>)
+          : null,
+      match: json['match'] != null
+          ? CallMatch.fromJson(json['match'] as Map<String, dynamic>)
+          : null,
+      booking: json['booking'] != null
+          ? CallBooking.fromJson(json['booking'] as Map<String, dynamic>)
+          : null,
+      warnings: (json['warnings'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      error: json['error'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'phase': phase,
+      'simulated': simulated,
+      'is_replay': isReplay,
+      'turns': turns.map((e) => e.toJson()).toList(),
+      'outcome': outcome?.toJson(),
+      'match': match?.toJson(),
+      'booking': booking?.toJson(),
+      'warnings': warnings,
+      'error': error,
+    };
+  }
+}
