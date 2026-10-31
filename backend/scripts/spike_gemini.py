@@ -129,7 +129,7 @@ def main() -> int:
         try:
             interaction = client.interactions.create(
                 agent=deep_research_agent,
-                input="Provide a one-paragraph summary of standard residential painting trade licensing in France.",
+                input="Reply with the single word OK.",
                 background=True,
             )
             interaction_id = getattr(interaction, "id", None)
