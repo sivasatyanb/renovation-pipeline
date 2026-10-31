@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/audio_player_service.dart';
+import '../services/call_api_client.dart';
 import '../services/call_handler.dart';
 import '../services/photo_picker_service.dart';
 import '../services/render_api_client.dart';
@@ -25,7 +26,9 @@ class StudioScreen extends StatefulWidget {
   final RenderApiClient? renderApiClient;
   final PhotoPickerService? photoPickerService;
   final VoiceInputService? voiceInputService;
+  final CallApiClient? callApiClient;
   final CallAudioPlayer Function()? audioPlayerFactory;
+  final CallAudioPlayer? audioPlayer;
   final OnCallPressedCallback? onCallPressed;
   final Duration pollInterval;
 
@@ -39,7 +42,9 @@ class StudioScreen extends StatefulWidget {
     this.renderApiClient,
     this.photoPickerService,
     this.voiceInputService,
+    this.callApiClient,
     this.audioPlayerFactory,
+    this.audioPlayer,
     this.onCallPressed,
     this.pollInterval = const Duration(seconds: 1),
   });
@@ -86,7 +91,7 @@ class _StudioScreenState extends State<StudioScreen> {
     _renderClient = widget.renderApiClient ?? HttpRenderApiClient();
     _photoPicker = widget.photoPickerService ?? PhotoPickerService();
     _voiceService = widget.voiceInputService ?? VoiceInputService();
-    _audioPlayer = widget.audioPlayerFactory?.call() ?? AudioplayersCallAudioPlayer();
+    _audioPlayer = widget.audioPlayer ?? widget.audioPlayerFactory?.call() ?? AudioplayersCallAudioPlayer();
 
     _briefController = TextEditingController();
 
@@ -352,6 +357,8 @@ class _StudioScreenState extends State<StudioScreen> {
           quizConfig: widget.quizConfig,
           afterRenderUrl: afterUrl,
           apiClient: _researchClient,
+          callApiClient: widget.callApiClient,
+          audioPlayer: widget.audioPlayer,
           onCallPressed: widget.onCallPressed,
         ),
       ),
@@ -381,6 +388,8 @@ class _StudioScreenState extends State<StudioScreen> {
             initialProject: project,
             quizConfig: widget.quizConfig,
             apiClient: _researchClient,
+            callApiClient: widget.callApiClient,
+            audioPlayer: widget.audioPlayer,
             onCallPressed: widget.onCallPressed,
           ),
         ),

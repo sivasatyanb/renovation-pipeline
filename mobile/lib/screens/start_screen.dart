@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/audio_player_service.dart';
+import '../services/call_api_client.dart';
 import '../services/call_handler.dart';
 import '../services/photo_picker_service.dart';
 import '../services/render_api_client.dart';
@@ -15,9 +16,11 @@ class StartScreen extends StatefulWidget {
   final QuizConfig? initialQuizConfig;
   final ResearchApiClient? apiClient;
   final RenderApiClient? renderApiClient;
+  final CallApiClient? callApiClient;
   final PhotoPickerService? photoPickerService;
   final VoiceInputService? voiceInputService;
   final CallAudioPlayer Function()? audioPlayerFactory;
+  final CallAudioPlayer? audioPlayer;
   final OnCallPressedCallback? onCallPressed;
 
   const StartScreen({
@@ -26,9 +29,11 @@ class StartScreen extends StatefulWidget {
     this.initialQuizConfig,
     this.apiClient,
     this.renderApiClient,
+    this.callApiClient,
     this.photoPickerService,
     this.voiceInputService,
     this.audioPlayerFactory,
+    this.audioPlayer,
     this.onCallPressed,
   });
 
@@ -104,9 +109,11 @@ class _StartScreenState extends State<StartScreen> {
           quizConfig: _quizConfig,
           apiClient: widget.apiClient,
           renderApiClient: widget.renderApiClient,
+          callApiClient: widget.callApiClient,
           photoPickerService: widget.photoPickerService,
           voiceInputService: widget.voiceInputService,
           audioPlayerFactory: widget.audioPlayerFactory,
+          audioPlayer: widget.audioPlayer,
           onCallPressed: widget.onCallPressed,
         ),
       ),

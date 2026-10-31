@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/audio_player_service.dart';
+import '../services/call_api_client.dart';
 import '../services/call_handler.dart';
 import 'research_screen.dart';
 
@@ -12,6 +14,8 @@ class QuizScreen extends StatefulWidget {
   final QuizConfig? quizConfig;
   final String? afterRenderUrl;
   final ResearchApiClient? apiClient;
+  final CallApiClient? callApiClient;
+  final CallAudioPlayer? audioPlayer;
   final OnCallPressedCallback? onCallPressed;
 
   const QuizScreen({
@@ -21,6 +25,8 @@ class QuizScreen extends StatefulWidget {
     this.quizConfig,
     this.afterRenderUrl,
     this.apiClient,
+    this.callApiClient,
+    this.audioPlayer,
     this.onCallPressed,
   });
 
@@ -113,6 +119,8 @@ class _QuizScreenState extends State<QuizScreen> {
           answers: answers,
           afterRenderUrl: widget.afterRenderUrl,
           apiClient: widget.apiClient,
+          callApiClient: widget.callApiClient,
+          audioPlayer: widget.audioPlayer,
           onCallPressed: widget.onCallPressed,
         ),
       ),

@@ -1415,4 +1415,238 @@ void main() {
     );
   });
 
+
+  group('Full End-to-End Stage Script Integration Test', () {
+    testWidgets(
+      'Full Stage Script: StartScreen (Paris) -> StudioScreen (sample room, sample brief, Renovate, slider, Find renovators) -> QuizScreen (Best value overall) -> ResearchScreen -> ResultsScreen (Atelier Kanso + banner) -> CallScreen (9200 to 8200 EUR, Match, booking link)',
+      (WidgetTester tester) async {
+        final fakeRenderApi = FakeRenderApiClient(
+          resultToReturn: defaultRenderResult,
+        );
+        final fakeResearchApi = FakeResearchApiClient(result: demoResult);
+        final fakePhotoPicker = FakePhotoPickerService();
+        final fakeAudio = FakeCallAudioPlayer();
+
+        final callTurns = [
+          CallTurn(
+            index: 0,
+            speaker: 'customer_agent',
+            text: 'Hello, I am an AI assistant calling for a client regarding painting and oak flooring for a 14 m2 Paris bedroom. Can you help?',
+            audioUrl: 'audio/0.wav',
+          ),
+          CallTurn(
+            index: 1,
+            speaker: 'renovator_agent',
+            text: 'Hello! We handle painting and flooring. Our non-binding estimate is 9200 EUR, including labour, materials, and VAT. How does that sound?',
+            audioUrl: 'audio/1.wav',
+          ),
+          CallTurn(
+            index: 2,
+            speaker: 'customer_agent',
+            text: 'Could you do 7100 EUR? The 14 m2 footprint allows combining crews in one 5-day slot, with flexible start timing.',
+            audioUrl: 'audio/2.wav',
+          ),
+          CallTurn(
+            index: 3,
+            speaker: 'renovator_agent',
+            text: '7100 EUR is too low. With your flexible schedule, the best I can do is 8200 EUR, including labour, materials, and VAT.',
+            audioUrl: 'audio/3.wav',
+          ),
+          CallTurn(
+            index: 4,
+            speaker: 'customer_agent',
+            text: '8200 EUR works non-bindingly. Does that include acoustic underlayment? Also, are you available for a site visit on 2026-11-02T10:00:00+01:00?',
+            audioUrl: 'audio/4.wav',
+          ),
+          CallTurn(
+            index: 5,
+            speaker: 'renovator_agent',
+            text: 'Yes, underlayment is included. I cannot do 10:00, but can we meet on 2026-11-02 at 14:00?',
+            audioUrl: 'audio/5.wav',
+          ),
+          CallTurn(
+            index: 6,
+            speaker: 'customer_agent',
+            text: "Perfect, 2026-11-02T14:00:00+01:00 is confirmed. Please send your attestation d'assurance décennale before the visit. Thank you, goodbye!",
+            audioUrl: 'audio/6.wav',
+          ),
+        ];
+
+        final callOutcome = CallOutcome(
+          endReason: 'agreement',
+          openingPrice: 9200,
+          finalPrice: 8200,
+          savings: 1000,
+          currency: 'EUR',
+          labourIncluded: true,
+          materialsIncluded: true,
+          taxIncluded: true,
+          scopeConfirmed: true,
+          agreedSlot: '2026-11-02T14:00:00+01:00',
+          notes: 'Scope includes painting, oak flooring, and acoustic underlayment for a 14 m2 Paris bedroom.',
+        );
+
+        final callMatch = CallMatch(
+          match: true,
+          reasons: ['Within budget range', 'Valid decennale insurance'],
+        );
+
+        final callBooking = CallBooking(
+          status: 'created',
+          startsAt: '2026-11-02T14:00:00+01:00',
+          location: '12 Rue de Rivoli, Paris',
+          eventUrl: 'https://calendar.google.com/calendar/event?eid=demo123',
+          warnings: ['Simulated invite only'],
+        );
+
+        final fakeCallApi = FakeCallApiClient(
+          statusSequence: [
+            CallStatusResponse(
+              status: 'completed',
+              phase: 'done',
+              isReplay: true,
+              turns: callTurns,
+              outcome: callOutcome,
+              match: callMatch,
+              booking: callBooking,
+              warnings: [],
+            ),
+          ],
+        );
+
+        // 1. Launch RenovationApp
+        await tester.pumpWidget(
+          RenovationApp(
+            initialProject: demoProject,
+            initialQuizConfig: quizConfig,
+            apiClient: fakeResearchApi,
+            renderApiClient: fakeRenderApi,
+            callApiClient: fakeCallApi,
+            photoPickerService: fakePhotoPicker,
+            audioPlayer: fakeAudio,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify StartScreen with Paris
+        expect(find.text('Project Summary'), findsOneWidget);
+        expect(find.widgetWithText(TextField, 'Paris'), findsOneWidget);
+
+        // Tap "Open Design Studio"
+        final startBtn = find.byKey(const Key('start_quiz_button'));
+        await tester.ensureVisible(startBtn);
+        await tester.tap(startBtn);
+        await tester.pumpAndSettle();
+
+        // 2. StudioScreen
+        expect(find.byKey(const Key('use_sample_room_button')), findsOneWidget);
+
+        // Use sample room
+        final sampleRoomBtn = find.byKey(const Key('use_sample_room_button'));
+        await tester.ensureVisible(sampleRoomBtn);
+        await tester.tap(sampleRoomBtn);
+        await tester.pumpAndSettle();
+
+        // Use sample brief
+        final sampleBriefBtn = find.byKey(const Key('use_sample_brief_button'));
+        await tester.ensureVisible(sampleBriefBtn);
+        await tester.tap(sampleBriefBtn);
+        await tester.pumpAndSettle();
+
+        // Tap Renovate
+        final renovateBtn = find.byKey(const Key('renovate_button'));
+        await tester.ensureVisible(renovateBtn);
+        await tester.tap(renovateBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.pumpAndSettle();
+
+        // Drag slider
+        final sliderHandle = find.byKey(const Key('slider_drag_handle'));
+        expect(sliderHandle, findsOneWidget);
+        await tester.ensureVisible(sliderHandle);
+        await tester.drag(sliderHandle, const Offset(-30, 0));
+        await tester.pumpAndSettle();
+
+        // Find renovators for this design
+        final findRenovatorsBtn = find.byKey(const Key('find_renovators_button'));
+        expect(findRenovatorsBtn, findsOneWidget);
+        await tester.ensureVisible(findRenovatorsBtn);
+        await tester.tap(findRenovatorsBtn);
+        await tester.pumpAndSettle();
+
+        // 3. QuizScreen
+        expect(find.text('Question 1 of 5'), findsOneWidget);
+
+        // Q1: Budget
+        await tester.tap(find.byKey(const Key('option_5k_15k')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        // Q2: Scope
+        await tester.tap(find.byKey(const Key('option_partial')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        // Q3: Timeline
+        await tester.tap(find.byKey(const Key('option_one_to_three_months')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        // Q4: Priority -> 'balanced' ("Best value overall")
+        expect(find.text('Best value overall'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('option_balanced')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('next_quiz_button')));
+        await tester.pumpAndSettle();
+
+        // Q5: Trust requirements
+        await tester.tap(find.byKey(const Key('option_licensed_insured')));
+        await tester.pumpAndSettle();
+
+        final submitQuizBtn = find.byKey(const Key('submit_quiz_button'));
+        await tester.ensureVisible(submitQuizBtn);
+        await tester.tap(submitQuizBtn);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // 4. ResearchScreen automatically advances to ResultsScreen
+        expect(find.byType(ResultsScreen), findsOneWidget);
+
+        // Verify ResultsScreen shows render preview banner and Atelier Kanso (#1)
+        expect(find.byKey(const Key('results_render_preview')), findsOneWidget);
+        expect(find.text('Your Renovation Design'), findsOneWidget);
+        expect(find.text('Atelier Kanso Renovations (Fictional Demo Co.)'), findsOneWidget);
+
+        // 5. Tap Call on Atelier Kanso (#1)
+        final callBtn = find.byKey(Key('call_button_${demoResult.contractors[0].id}'));
+        expect(callBtn, findsOneWidget);
+        await tester.ensureVisible(callBtn);
+        await tester.tap(callBtn);
+        await tester.pumpAndSettle();
+
+        // 6. CallScreen
+        expect(find.byType(CallScreen), findsOneWidget);
+
+        // Tap Start Call
+        final startCallBtn = find.byKey(const Key('start_call_button'));
+        expect(startCallBtn, findsOneWidget);
+        await tester.tap(startCallBtn);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // Verify call outcome: 9200 to 8200 EUR, Match, and booking link
+        final summaryCard = find.byKey(const Key('call_summary_card'));
+        await tester.scrollUntilVisible(summaryCard, 100);
+        expect(summaryCard, findsOneWidget);
+        expect(find.textContaining('9200 EUR -> 8200 EUR (Saved 1000 EUR)'), findsOneWidget);
+        expect(find.text('Match'), findsOneWidget);
+        expect(find.byKey(const Key('booking_event_link')), findsOneWidget);
+        expect(find.text('https://calendar.google.com/calendar/event?eid=demo123'), findsOneWidget);
+      },
+    );
+  });
 }

@@ -3,6 +3,7 @@ import 'models/models.dart';
 import 'screens/start_screen.dart';
 import 'services/api_client.dart';
 import 'services/audio_player_service.dart';
+import 'services/call_api_client.dart';
 import 'services/call_handler.dart';
 import 'services/photo_picker_service.dart';
 import 'services/render_api_client.dart';
@@ -17,9 +18,11 @@ class RenovationApp extends StatelessWidget {
   final QuizConfig? initialQuizConfig;
   final ResearchApiClient? apiClient;
   final RenderApiClient? renderApiClient;
+  final CallApiClient? callApiClient;
   final PhotoPickerService? photoPickerService;
   final VoiceInputService? voiceInputService;
   final CallAudioPlayer Function()? audioPlayerFactory;
+  final CallAudioPlayer? audioPlayer;
   final OnCallPressedCallback? onCallPressed;
 
   const RenovationApp({
@@ -28,9 +31,11 @@ class RenovationApp extends StatelessWidget {
     this.initialQuizConfig,
     this.apiClient,
     this.renderApiClient,
+    this.callApiClient,
     this.photoPickerService,
     this.voiceInputService,
     this.audioPlayerFactory,
+    this.audioPlayer,
     this.onCallPressed,
   });
 
@@ -50,9 +55,11 @@ class RenovationApp extends StatelessWidget {
         initialQuizConfig: initialQuizConfig,
         apiClient: apiClient,
         renderApiClient: renderApiClient,
+        callApiClient: callApiClient,
         photoPickerService: photoPickerService,
         voiceInputService: voiceInputService,
         audioPlayerFactory: audioPlayerFactory,
+        audioPlayer: audioPlayer,
         onCallPressed: onCallPressed,
       ),
       debugShowCheckedModeBanner: false,
