@@ -13,7 +13,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from pydantic import BaseModel
 
 
 def load_env_file(env_path: Path) -> None:
@@ -28,11 +27,6 @@ def load_env_file(env_path: Path) -> None:
         value = value.strip().strip("'").strip('"')
         if key and key not in os.environ:
             os.environ[key] = value
-
-
-class SpikeStructuredCheck(BaseModel):
-    ok: bool
-    model_echo: str
 
 
 def main() -> int:
@@ -78,8 +72,13 @@ def main() -> int:
     try:
         from google import genai
         from google.genai import types
+        from pydantic import BaseModel
+
+        class SpikeStructuredCheck(BaseModel):
+            ok: bool
+            model_echo: str
     except ImportError as exc:
-        report["blocker"] = f"google-genai SDK not installed in active environment: {exc}"
+        report["blocker"] = f"Required SDK not installed in active environment: {exc}"
         print(json.dumps(report, indent=2))
         return 3
 
