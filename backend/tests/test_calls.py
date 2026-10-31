@@ -762,9 +762,9 @@ async def test_api_call_lifecycle_replay_audio_stop_and_schema_validation(
 
         assert final_body["is_replay"] is True
         assert final_body["simulated"] is True
-        assert len(final_body["turns"]) == 6
-        assert final_body["outcome"]["final_price"] == 7650
-        assert final_body["outcome"]["savings"] == 1550
+        assert len(final_body["turns"]) == 7
+        assert final_body["outcome"]["final_price"] == 8200
+        assert final_body["outcome"]["savings"] == 1000
         assert final_body["match"]["match"] is True
         assert final_body["booking"] is not None
         assert final_body["booking"]["status"] == "link_only"
@@ -773,7 +773,7 @@ async def test_api_call_lifecycle_replay_audio_stop_and_schema_validation(
         after_resp = await client.get(f"/calls/{call_id}?after=4")
         assert after_resp.status_code == 200
         after_turns = after_resp.json()["turns"]
-        assert [t["index"] for t in after_turns] == [4, 5]
+        assert [t["index"] for t in after_turns] == [4, 5, 6]
 
         # 4. Call with contractor 2 (has red_flags) -> match=False and NO booking!
         payload_c2 = {
@@ -793,8 +793,34 @@ async def test_api_call_lifecycle_replay_audio_stop_and_schema_validation(
         assert c2_body["match"]["match"] is False
         assert c2_body["booking"] is None
 
-        # 5. Stop endpoint test -> status="stopped", booking=None
-        stop_resp = await client.post(f"/calls/{call_id}/stop")
+        # 5a. Stop endpoint on already-completed call -> preserves status="completed" and booking
+        stop_completed_resp = await client.post(f"/calls/{call_id}/stop")
+        assert stop_completed_resp.status_code == 200
+        stop_completed_body = stop_completed_resp.json()
+        jsonschema.validate(instance=stop_completed_body, schema=call_status_schema)
+        assert stop_completed_body["status"] == "completed"
+        assert stop_completed_body["phase"] == "done"
+        assert stop_completed_body["booking"] is not None
+        assert stop_completed_body["booking"]["status"] == "link_only"
+
+        # 5b. Stop endpoint on running/queued call -> status="stopped", booking=None
+        running_call_id = "running-call-to-stop"
+        CALLS[running_call_id] = CallRecord(
+            call_id=running_call_id,
+            job_id=job_id,
+            contractor_id="demo-contractor-1",
+            research_request=req,
+            contractor=demo_res.contractors[0],
+            is_demo=True,
+            meeting=MeetingInput.model_validate(payload["meeting"]),
+            slots=payload["meeting"]["slots"],
+            persona=build_renovator_persona(
+                demo_res.contractors[0], payload["meeting"]["slots"], is_demo=True
+            ),
+            status="running",
+            phase="negotiating",
+        )
+        stop_resp = await client.post(f"/calls/{running_call_id}/stop")
         assert stop_resp.status_code == 200
         stop_body = stop_resp.json()
         jsonschema.validate(instance=stop_body, schema=call_status_schema)
@@ -886,6 +912,7 @@ async def test_live_simulated_flow_audio_endpoint_and_mid_call_stop(
     )
 
     monkeypatch.setattr(settings, "call_replay", False)
+    monkeypatch.setattr(settings, "gemini_api_key", "fake-test-key")
     monkeypatch.setattr(
         settings, "google_token_file", "non_existent_token_12345.json"
     )

@@ -369,3 +369,66 @@ class AgentTurnOutput(BaseModel):
     text: str
     end_call: bool = False
     end_reason: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Studio Render Models (/shared/schemas/render_request.schema.json & render_status.schema.json)
+# ---------------------------------------------------------------------------
+
+RenderMimeType = Literal["image/jpeg", "image/png", "image/webp"]
+RenderStatus = Literal["queued", "running", "completed", "failed"]
+RenderPhase = Literal["planning", "rendering", "narrating", "done"]
+
+
+class RenderRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    image_base64: str = Field(..., min_length=1)
+    mime_type: RenderMimeType
+    instruction: str = Field(..., min_length=1, max_length=1000)
+    city: str | None = None
+    country: str | None = None
+
+
+class RenderPlanExtraction(BaseModel):
+    """Structured output from RENDER_PLAN_MODEL (no field named 'title')."""
+
+    renovation_prompt: str = Field(..., min_length=1)
+    voice_confirmation: str = Field(..., min_length=1)
+    room: RoomInfo
+    style: str = Field(..., min_length=1)
+    work_items: list[WorkItem] = Field(..., min_length=1)
+
+
+class RenderResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    before_url: str
+    after_url: str
+    renovation_prompt: str
+    voice_confirmation: str
+    audio_url: str | None = None
+    model_used: str
+    latency_ms: int = Field(..., ge=0)
+    room: RoomInfo
+    style: str = Field(..., min_length=1)
+    work_items: list[WorkItem] = Field(..., min_length=1)
+
+
+class RenderCreateResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    render_id: str
+    status: RenderStatus
+
+
+class RenderStatusResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: RenderStatus
+    phase: RenderPhase | None = None
+    is_replay: bool = False
+    result: RenderResult | None = None
+    warnings: list[str] = Field(default_factory=list)
+    error: str | None = None
+
