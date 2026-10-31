@@ -1,0 +1,40 @@
+# Environment & Secrets
+.env
+*.env
+!*.env.example
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Flutter / Dart / Android
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/.gradle/
+mobile/android/captures/
+mobile/android/local.properties
+mobile/android/key.properties
+*.iml
+*.apk
+*.aab
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

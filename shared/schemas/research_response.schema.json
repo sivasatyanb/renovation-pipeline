@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renovation-pipeline.local/schemas/research_response.schema.json",
+  "title": "ResearchResult",
+  "description": "Output contract for completed renovation contractor research",
+  "type": "object",
+  "required": ["project_id", "price_estimate", "contractors", "warnings"],
+  "additionalProperties": false,
+  "properties": {
+    "project_id": {
+      "type": "string"
+    },
+    "is_demo": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the result is loaded from /shared/fixtures/demo_result.json in DEMO_MODE"
+    },
+    "price_estimate": {
+      "type": "object",
+      "required": ["low", "high", "currency", "line_items", "source_urls"],
+      "additionalProperties": false,
+      "properties": {
+        "low": { "type": ["number", "null"] },
+        "high": { "type": ["number", "null"] },
+        "currency": { "type": "string" },
+        "line_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "low", "high"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "low": { "type": ["number", "null"] },
+              "high": { "type": ["number", "null"] }
+            }
+          }
+        },
+        "source_urls": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "contractors": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "rank",
+          "name",
+          "phone_e164",
+          "phone_verified",
+          "phone_source_url",
+          "website",
+          "address",
+          "trades",
+          "rating",
+          "review_count",
+          "certifications",
+          "insurance",
+          "portfolio_urls",
+          "expected_price",
+          "availability",
+          "score",
+          "subscores",
+          "why_recommended",
+          "red_flags",
+          "source_urls",
+          "call_brief"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "rank": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "name": { "type": "string" },
+          "phone_e164": { "type": "string" },
+          "phone_verified": { "type": "boolean" },
+          "phone_source_url": { "type": ["string", "null"] },
+          "website": { "type": ["string", "null"] },
+          "address": { "type": ["string", "null"] },
+          "trades": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "rating": { "type": ["number", "null"] },
+          "review_count": { "type": ["integer", "null"] },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "source_url"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "source_url": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "insurance": { "type": ["string", "null"] },
+          "portfolio_urls": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "expected_price": {
+            "type": "object",
+            "required": ["low", "high", "currency"],
+            "additionalProperties": false,
+            "properties": {
+              "low": { "type": ["number", "null"] },
+              "high": { "type": ["number", "null"] },
+              "currency": { "type": "string" }
+            }
+          },
+          "availability": { "type": ["string", "null"] },
+          "score": { "type": "number", "minimum": 0, "maximum": 100 },
+          "subscores": {
+            "type": "object",
+            "required": ["price", "reputation", "fit", "availability"],
+            "additionalProperties": false,
+            "properties": {
+              "price": { "type": "number", "minimum": 0, "maximum": 100 },
+              "reputation": { "type": "number", "minimum": 0, "maximum": 100 },
+              "fit": { "type": "number", "minimum": 0, "maximum": 100 },
+              "availability": { "type": "number", "minimum": 0, "maximum": 100 }
+            }
+          },
+          "why_recommended": { "type": "string" },
+          "red_flags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "source_urls": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "call_brief": {
+            "type": "object",
+            "required": ["target_price", "max_price", "leverage_points", "questions_to_ask"],
+            "additionalProperties": false,
+            "properties": {
+              "target_price": { "type": ["number", "null"] },
+              "max_price": { "type": ["number", "null"] },
+              "leverage_points": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "questions_to_ask": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

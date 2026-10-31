@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renovation-pipeline.local/schemas/job_status.schema.json",
+  "title": "JobStatusResponse",
+  "description": "Response schema for GET /research/{job_id}",
+  "type": "object",
+  "required": ["status", "phase", "result", "error"],
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["queued", "running", "completed", "failed"]
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["researching", "structuring", "verifying", "done"]
+    },
+    "result": {
+      "oneOf": [
+        { "$ref": "research_response.schema.json" },
+        { "type": "null" }
+      ]
+    },
+    "error": {
+      "type": ["string", "null"]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "project_id": "demo-001",
+  "client": {
+    "city": "Paris",
+    "country": "France"
+  },
+  "room": {
+    "type": "bedroom",
+    "surface_m2": 14,
+    "confidence": "low"
+  },
+  "style": "japandi",
+  "render_urls": [],
+  "work_items": [
+    {
+      "trade": "painting",
+      "description": "Walls and ceiling",
+      "quantity": 38,
+      "unit": "m2"
+    },
+    {
+      "trade": "flooring",
+      "description": "Oak parquet installation",
+      "quantity": 14,
+      "unit": "m2"
+    }
+  ]
+}

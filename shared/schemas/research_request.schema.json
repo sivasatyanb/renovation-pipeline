@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renovation-pipeline.local/schemas/research_request.schema.json",
+  "title": "ResearchRequest",
+  "description": "Input payload for POST /research",
+  "type": "object",
+  "required": ["project", "answers"],
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["project_id", "client", "room", "style", "render_urls", "work_items"],
+      "additionalProperties": false,
+      "properties": {
+        "project_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "client": {
+          "type": "object",
+          "required": ["city", "country"],
+          "additionalProperties": false,
+          "properties": {
+            "city": { "type": "string", "minLength": 1 },
+            "country": { "type": "string", "minLength": 1 }
+          }
+        },
+        "room": {
+          "type": "object",
+          "required": ["type", "surface_m2", "confidence"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "surface_m2": { "type": "number", "exclusiveMinimum": 0 },
+            "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+          }
+        },
+        "style": {
+          "type": "string",
+          "minLength": 1
+        },
+        "render_urls": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "work_items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["trade", "description", "quantity", "unit"],
+            "additionalProperties": false,
+            "properties": {
+              "trade": { "type": "string", "minLength": 1 },
+              "description": { "type": "string", "minLength": 1 },
+              "quantity": { "type": "number", "exclusiveMinimum": 0 },
+              "unit": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "answers": {
+      "type": "object",
+      "required": ["budget", "scope", "timeline", "priority", "trust_requirements"],
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "type": "string",
+          "enum": ["under_5k", "5k_15k", "15k_40k", "over_40k", "unknown"]
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["cosmetic", "partial", "full_nonstructural", "full_structural"]
+        },
+        "timeline": {
+          "type": "string",
+          "enum": ["under_one_month", "one_to_three_months", "three_to_six_months", "flexible"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["lowest_price", "balanced", "quality", "design_match"]
+        },
+        "trust_requirements": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "licensed_insured",
+              "high_reviews",
+              "style_portfolio",
+              "written_quote",
+              "single_contact"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
